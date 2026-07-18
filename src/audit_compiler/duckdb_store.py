@@ -3,18 +3,16 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Iterator
-from contextlib import contextmanager
 from datetime import UTC, datetime
 from pathlib import Path
-from uuid import UUID, uuid4
+from uuid import uuid4
 
 import duckdb
 
 from audit_compiler.adapters.gdpdu import ParsedTable
 from audit_compiler.adapters.xlsx import XlsxWorkbook
 from audit_compiler.inventory import SourceFile
-from audit_compiler.models import EngagementIdentity, EvidenceRef, FinancialEvent
+from audit_compiler.models import EvidenceRef
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS source_files (
@@ -177,65 +175,29 @@ CREATE TABLE IF NOT EXISTS xlsx_normalized_records (
     UNIQUE (sheet_id, row_number)
 );
 
-CREATE TABLE IF NOT EXISTS engagements (
-    engagement_id UUID PRIMARY KEY,
-    name VARCHAR NOT NULL,
+CREATE TABLE IF NOT EXISTS audit_runs (
+    engagement_id VARCHAR NOT NULL,
+    run_id VARCHAR NOT NULL,
     dossier_root VARCHAR NOT NULL,
-    locale VARCHAR NOT NULL CHECK (locale IN ('de', 'en')),
-    created_at TIMESTAMPTZ NOT NULL
+    created_at TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY (engagement_id, run_id)
 );
 
-CREATE TABLE IF NOT EXISTS compilation_runs (
-    run_id UUID PRIMARY KEY,
-    engagement_id UUID NOT NULL REFERENCES engagements(engagement_id),
-    status VARCHAR NOT NULL CHECK (status IN ('running', 'completed', 'failed')),
-    started_at TIMESTAMPTZ NOT NULL,
-    completed_at TIMESTAMPTZ,
-    error VARCHAR
-);
-
-CREATE TABLE IF NOT EXISTS run_source_files (
-    run_id UUID NOT NULL REFERENCES compilation_runs(run_id),
+CREATE TABLE IF NOT EXISTS audit_ir_tables (
+    engagement_id VARCHAR NOT NULL,
+    run_id VARCHAR NOT NULL,
+    table_ordinal BIGINT NOT NULL,
+    table_name VARCHAR NOT NULL,
     source_path VARCHAR NOT NULL,
-    file_type VARCHAR NOT NULL,
-    byte_size BIGINT NOT NULL CHECK (byte_size >= 0),
-    sha256 VARCHAR NOT NULL CHECK (length(sha256) = 64),
-    PRIMARY KEY (run_id, source_path)
-);
-
-CREATE TABLE IF NOT EXISTS canonical_events (
-    run_id UUID NOT NULL REFERENCES compilation_runs(run_id),
-    event_id UUID NOT NULL,
-    kind VARCHAR NOT NULL,
-    occurred_on DATE NOT NULL,
-    party_ids VARCHAR[] NOT NULL,
-    account_ids VARCHAR[] NOT NULL,
-    user_id VARCHAR,
-    document_id VARCHAR,
-    net_amount DECIMAL(38, 9),
-    tax_amount DECIMAL(38, 9),
-    gross_amount DECIMAL(38, 9),
-    PRIMARY KEY (run_id, event_id)
-);
-
-CREATE TABLE IF NOT EXISTS canonical_event_evidence (
-    run_id UUID NOT NULL,
-    event_id UUID NOT NULL,
-    evidence_id UUID NOT NULL,
-    source_path VARCHAR NOT NULL,
+    file_sha256 VARCHAR NOT NULL,
     source_type VARCHAR NOT NULL,
-    file_sha256 VARCHAR NOT NULL CHECK (length(file_sha256) = 64),
-    raw_value VARCHAR NOT NULL,
-    raw_value_sha256 VARCHAR NOT NULL CHECK (length(raw_value_sha256) = 64),
-    normalized_value VARCHAR,
-    extraction_method VARCHAR NOT NULL,
-    row_number BIGINT,
+    columns_json VARCHAR NOT NULL,
+    rows_json VARCHAR NOT NULL,
+    row_numbers_json VARCHAR NOT NULL,
     sheet VARCHAR,
-    cell VARCHAR,
-    page_number BIGINT,
-    passage VARCHAR,
-    PRIMARY KEY (run_id, event_id, evidence_id),
-    FOREIGN KEY (run_id, event_id) REFERENCES canonical_events(run_id, event_id)
+    page_numbers_json VARCHAR NOT NULL,
+    PRIMARY KEY (engagement_id, run_id, table_ordinal),
+    FOREIGN KEY (engagement_id, run_id) REFERENCES audit_runs(engagement_id, run_id)
 );
 """
 
@@ -254,143 +216,78 @@ def initialize_schema(connection: duckdb.DuckDBPyConnection) -> None:
     connection.execute(_SCHEMA)
 
 
-@contextmanager
-def engagement_run(
-    connection: duckdb.DuckDBPyConnection,
-    identity: EngagementIdentity,
-    *,
-    run_id: UUID | None = None,
-) -> Iterator[UUID]:
-    """Create an isolated run and atomically commit or roll back all run data."""
+class DuckDBAuditStore:
+    """Authoritative engagement/run-scoped store for parsed Audit IR."""
 
-    current_run_id = run_id or uuid4()
-    started_at = datetime.now(UTC)
-    connection.execute("BEGIN TRANSACTION")
-    try:
-        connection.execute(
-            """
-            INSERT INTO engagements
-                (engagement_id, name, dossier_root, locale, created_at)
-            VALUES (?, ?, ?, ?, ?)
-            ON CONFLICT (engagement_id) DO NOTHING
-            """,
-            [
-                identity.engagement_id,
-                identity.name,
-                identity.dossier_root,
-                identity.locale.value,
-                started_at,
-            ],
-        )
-        stored_identity = connection.execute(
-            """
-            SELECT dossier_root, locale
-            FROM engagements
-            WHERE engagement_id = ?
-            """,
-            [identity.engagement_id],
-        ).fetchone()
-        if stored_identity != (identity.dossier_root, identity.locale.value):
-            raise ValueError(
-                "engagement_id is already bound to a different dossier or locale"
-            )
-        connection.execute(
-            """
-            INSERT INTO compilation_runs
-                (run_id, engagement_id, status, started_at)
-            VALUES (?, ?, 'running', ?)
-            """,
-            [current_run_id, identity.engagement_id, started_at],
-        )
-        yield current_run_id
-        connection.execute(
-            """
-            UPDATE compilation_runs
-            SET status = 'completed', completed_at = ?
-            WHERE run_id = ?
-            """,
-            [datetime.now(UTC), current_run_id],
-        )
-        connection.execute("COMMIT")
-    except BaseException:
-        connection.execute("ROLLBACK")
-        raise
+    def __init__(self, database: str | Path = ":memory:") -> None:
+        self.database = str(database)
 
-
-def store_run_source_files(
-    connection: duckdb.DuckDBPyConnection,
-    run_id: UUID,
-    sources: tuple[SourceFile, ...],
-) -> None:
-    """Store an immutable source inventory scoped to one compilation run."""
-
-    for source in sources:
-        connection.execute(
-            """
-            INSERT INTO run_source_files
-                (run_id, source_path, file_type, byte_size, sha256)
-            VALUES (?, ?, ?, ?, ?)
-            """,
-            [run_id, source.path, source.file_type, source.byte_size, source.sha256],
-        )
-
-
-def store_canonical_events(
-    connection: duckdb.DuckDBPyConnection,
-    run_id: UUID,
-    events: tuple[FinancialEvent, ...],
-) -> None:
-    """Persist mapped events and self-contained exact provenance for one run."""
-
-    for event in events:
-        connection.execute(
-            """
-            INSERT INTO canonical_events
-                (run_id, event_id, kind, occurred_on, party_ids, account_ids,
-                 user_id, document_id, net_amount, tax_amount, gross_amount)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """,
-            [
-                run_id,
-                event.event_id,
-                event.kind,
-                event.occurred_on,
-                list(event.party_ids),
-                list(event.account_ids),
-                event.user_id,
-                event.document_id,
-                event.net_amount,
-                event.tax_amount,
-                event.gross_amount,
-            ],
-        )
-        for evidence in event.evidence_refs:
+    def persist_dossier(self, engagement_id: str, run_id: str, dossier) -> None:  # noqa: ANN001
+        connection = connect(self.database)
+        try:
+            connection.execute("BEGIN")
             connection.execute(
-                """
-                INSERT INTO canonical_event_evidence
-                    (run_id, event_id, evidence_id, source_path, source_type,
-                     file_sha256, raw_value, raw_value_sha256, normalized_value,
-                     extraction_method, row_number, sheet, cell, page_number, passage)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """,
-                [
-                    run_id,
-                    event.event_id,
-                    evidence.evidence_id,
-                    evidence.source_path,
-                    evidence.source_type.value,
-                    evidence.file_sha256,
-                    evidence.raw_value,
-                    evidence.raw_value_sha256,
-                    evidence.normalized_value,
-                    evidence.extraction_method,
-                    evidence.row,
-                    evidence.sheet,
-                    evidence.cell,
-                    evidence.page,
-                    evidence.passage,
-                ],
+                "INSERT INTO audit_runs VALUES (?, ?, ?, ?)",
+                [engagement_id, run_id, str(dossier.root), datetime.now(UTC)],
             )
+            for ordinal, table in enumerate(dossier.tables):
+                connection.execute(
+                    """
+                    INSERT INTO audit_ir_tables VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    [
+                        engagement_id,
+                        run_id,
+                        ordinal,
+                        table.name,
+                        table.source_path,
+                        table.file_sha256,
+                        table.source_type.value,
+                        json.dumps(table.columns, ensure_ascii=False),
+                        json.dumps(table.rows, ensure_ascii=False),
+                        json.dumps(table.row_numbers),
+                        table.sheet,
+                        json.dumps(table.page_numbers),
+                    ],
+                )
+            connection.execute("COMMIT")
+        except Exception:
+            connection.execute("ROLLBACK")
+            raise
+        finally:
+            connection.close()
+
+    def load_dossier(self, engagement_id: str, run_id: str):  # noqa: ANN201
+        from audit_compiler.ir.dossier import LoadedDossier, SourceTable
+        from audit_compiler.models import SourceType
+
+        connection = connect(self.database)
+        try:
+            run = connection.execute(
+                "SELECT dossier_root FROM audit_runs WHERE engagement_id = ? AND run_id = ?",
+                [engagement_id, run_id],
+            ).fetchone()
+            if run is None:
+                raise KeyError(f"unknown audit run: {engagement_id}/{run_id}")
+            rows = connection.execute(
+                """SELECT table_name, source_path, file_sha256, source_type, columns_json,
+                          rows_json, row_numbers_json, sheet, page_numbers_json
+                   FROM audit_ir_tables WHERE engagement_id = ? AND run_id = ?
+                   ORDER BY table_ordinal""",
+                [engagement_id, run_id],
+            ).fetchall()
+        finally:
+            connection.close()
+        tables = tuple(
+            SourceTable(
+                name=row[0], source_path=row[1], file_sha256=row[2],
+                source_type=SourceType(row[3]), columns=tuple(json.loads(row[4])),
+                rows=tuple(json.loads(row[5])), row_numbers=tuple(json.loads(row[6])),
+                sheet=row[7], page_numbers=tuple(json.loads(row[8])),
+            )
+            for row in rows
+        )
+        return LoadedDossier(root=Path(run[0]), tables=tables, warnings=())
 
 
 def store_source_files(

@@ -1,8 +1,10 @@
-"""Run a control's arithmetic in DuckDB so every calculation is exact and replayable.
+"""LEGACY BRIDGE: run a dossier control's arithmetic in DuckDB.
 
 Rows are loaded into a typed temporary table and the control's SQL is executed verbatim.
 Money columns use ``DECIMAL(18,2)`` (never floats); the SQL string stored on the finding
-is exactly the query that produced the number.
+is exactly the query that produced the number. New controls must target the scoped
+``DuckDBAuditStore`` interface; this bridge remains until the four v1 controls have
+replacement coverage.
 """
 
 from __future__ import annotations

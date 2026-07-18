@@ -1,4 +1,4 @@
-"""Deterministic capital-expenditure classification control."""
+"""LEGACY STRONG CONTROL: available behind the controls API, not production-integrated."""
 
 from __future__ import annotations
 

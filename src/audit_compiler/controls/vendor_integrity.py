@@ -1,4 +1,4 @@
-"""Deterministic vendor-integrity and segregation-of-duties control."""
+"""LEGACY STRONG CONTROL: available behind the controls API, not production-integrated."""
 
 from __future__ import annotations
 

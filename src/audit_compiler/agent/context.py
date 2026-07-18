@@ -10,7 +10,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 from audit_compiler.agent.evidence_registry import EvidenceRegistry
-from audit_compiler.ir.dossier import LoadedDossier, load_dossier
+from audit_compiler.ir.dossier import LoadedDossier
 from audit_compiler.models import EvidenceRef
 
 
@@ -22,7 +22,30 @@ class AgentContext:
 
     @classmethod
     def from_dossier_path(cls, path: str | Path, *, params: dict | None = None) -> AgentContext:
-        return cls(dossier=load_dossier(Path(path)), params=params or {})
+        from audit_compiler.compiler import CompileRequest, CompilerService
+
+        root = Path(path).expanduser().resolve()
+        bundle = CompilerService().compile(CompileRequest(dossier=root, params=params or {}))
+        return cls.from_compiled_run(
+            root / ".admissible" / "audit.duckdb",
+            bundle.engagement.engagement_id,
+            bundle.engagement.run_id,
+            params=params,
+        )
+
+    @classmethod
+    def from_compiled_run(
+        cls,
+        database: str | Path,
+        engagement_id: str,
+        run_id: str,
+        *,
+        params: dict | None = None,
+    ) -> AgentContext:
+        from audit_compiler.duckdb_store import DuckDBAuditStore
+
+        dossier = DuckDBAuditStore(database).load_dossier(engagement_id, run_id)
+        return cls(dossier=dossier, params=params or {})
 
     def cite(self, ref: EvidenceRef) -> str:
         """Record an evidence pointer and return its citeable id."""

@@ -27,7 +27,8 @@ from pydantic import BaseModel
 from audit_compiler.agent.context import AgentContext
 from audit_compiler.agent.store import get_store
 from audit_compiler.api.investigations import router as investigations_router
-from audit_compiler.pipeline import compile_engagement
+from audit_compiler.compiler import CompileRequest as CompilerRequest
+from audit_compiler.compiler import CompilerService
 
 app = FastAPI(title="Evidentia", summary="Provenance-first evidence compiler for auditors")
 app.add_middleware(
@@ -49,11 +50,17 @@ class ReviewRequest(BaseModel):
     note: str | None = None
 
 
+def _compile(path: Path, *, name: str | None = None) -> dict:
+    return CompilerService().compile(
+        CompilerRequest(dossier=path, name=name)
+    ).model_dump(mode="json")
+
+
 def _bundle() -> dict:
     if _STATE["bundle"] is None:
         default = os.environ.get("EVIDENTIA_DOSSIER")
         if default and Path(default).exists():
-            _STATE["bundle"] = compile_engagement(Path(default))
+            _STATE["bundle"] = _compile(Path(default))
         else:
             raise HTTPException(404, "No engagement compiled. POST /engagements/compile first.")
     return _STATE["bundle"]
@@ -69,7 +76,7 @@ def compile_endpoint(request: CompileRequest) -> dict:
     path = Path(request.dossier_path).expanduser()
     if not path.exists():
         raise HTTPException(400, f"dossier path does not exist: {request.dossier_path}")
-    _STATE["bundle"] = compile_engagement(path, name=request.name)
+    _STATE["bundle"] = _compile(path, name=request.name)
     return _STATE["bundle"]["engagement"]
 
 
@@ -173,7 +180,11 @@ async def upload_engagement(file: UploadFile) -> dict:
         persist_dir = Path(tempfile.mkdtemp(prefix="evidentia-dossier-"))
         shutil.copytree(dossier_root, persist_dir, dirs_exist_ok=True)
 
-    bundle = compile_engagement(persist_dir)
-    ctx = AgentContext.from_dossier_path(persist_dir)
+    bundle = _compile(persist_dir)
+    ctx = AgentContext.from_compiled_run(
+        persist_dir / ".admissible" / "audit.duckdb",
+        bundle["engagement"]["engagement_id"],
+        bundle["engagement"]["run_id"],
+    )
     engagement_id = get_store().add_engagement(None, ctx, bundle)
     return {"engagement_id": engagement_id, "engagement": bundle["engagement"]}
