@@ -150,7 +150,7 @@ def test_xlsx_is_stored_and_reported_by_compile_cli(tmp_path: Path) -> None:
     report_path = tmp_path / "report.json"
     main(
         [
-            "compile",
+            "store",
             str(tmp_path),
             "--database",
             str(database),

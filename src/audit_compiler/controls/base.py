@@ -1,12 +1,21 @@
-"""Generic deterministic control contracts and local outcome types."""
+"""Shared contracts for record-oriented and dossier-oriented controls.
+
+The package contains two compatible deterministic execution styles:
+
+* record controls evaluate normalized records and return local ``ControlOutcome`` values;
+* dossier controls inspect a ``LoadedDossier`` and return admission-gated ``Finding`` values.
+
+Both styles share provenance-first evidence models and Decimal-only calculations.
+"""
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from decimal import Decimal
 from enum import StrEnum
-from typing import Generic, Protocol, TypeVar, runtime_checkable
+from typing import Generic, Literal, Protocol, TypeVar, runtime_checkable
 
+from audit_compiler.ir.dossier import LoadedDossier
 from audit_compiler.models import EvidenceRef
 
 RecordT = TypeVar("RecordT")
@@ -34,8 +43,22 @@ class RuleParameters(Protocol):
 
 @dataclass(frozen=True, slots=True)
 class ControlContext(Generic[RecordT, ParametersT]):
-    records: tuple[RecordT, ...]
-    parameters: ParametersT
+    """Execution context for either normalized records or a loaded dossier."""
+
+    records: tuple[RecordT, ...] = ()
+    parameters: ParametersT | None = None
+    dossier: LoadedDossier | None = None
+    params: dict[str, object] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        record_mode = self.parameters is not None
+        dossier_mode = self.dossier is not None
+        if record_mode == dossier_mode:
+            raise ValueError(
+                "ControlContext requires either records/parameters or dossier/params"
+            )
+        if dossier_mode and self.records:
+            raise ValueError("dossier control context cannot also contain normalized records")
 
 
 @dataclass(frozen=True, slots=True)
@@ -101,9 +124,81 @@ class ControlOutcome:
 
 @runtime_checkable
 class Control(Protocol[RecordT, ParametersT]):
+    """A deterministic control over normalized records."""
+
     control_id: str
     version: str
 
     def evaluate(
         self, context: ControlContext[RecordT, ParametersT]
     ) -> tuple[ControlOutcome, ...]: ...
+
+
+Outcome = Literal["absent", "present", "not_applicable"]
+
+
+@dataclass(frozen=True)
+class EvidenceStep:
+    step: str
+    evidence: tuple[EvidenceRef, ...]
+
+
+@dataclass(frozen=True)
+class CalcInput:
+    label: str
+    value: Decimal
+    evidence: EvidenceRef
+
+
+@dataclass(frozen=True)
+class Calculation:
+    expression: str
+    inputs: tuple[CalcInput, ...]
+    result: Decimal
+    sql: str
+
+
+@dataclass(frozen=True)
+class CounterTest:
+    """An innocent explanation that a dossier control actively searched for."""
+
+    name: str
+    outcome: Outcome
+    detail: str
+    required: bool = True
+    evidence: tuple[EvidenceRef, ...] = ()
+
+
+@dataclass(frozen=True)
+class Finding:
+    control_id: str
+    control_version: str
+    title: str
+    assertion: str
+    severity: Literal["high", "medium", "low", "control"]
+    narrative: str
+    exposure: Decimal
+    exposure_label: Literal["net", "gross", "control"]
+    evidence_chain: tuple[EvidenceStep, ...]
+    calculation: Calculation
+    counter_tests: tuple[CounterTest, ...]
+    recommended_action: str
+    uncertainty: str | None = None
+    subject: str = ""
+
+    @property
+    def cleared_by(self) -> CounterTest | None:
+        return next(
+            (counter for counter in self.counter_tests if counter.outcome == "present"),
+            None,
+        )
+
+
+@runtime_checkable
+class DossierControl(Protocol):
+    """A deterministic control over a fully loaded dossier."""
+
+    id: str
+    version: str
+
+    def run(self, ctx: ControlContext[object, object]) -> list[Finding]: ...

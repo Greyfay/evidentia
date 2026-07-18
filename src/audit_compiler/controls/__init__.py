@@ -1,12 +1,18 @@
-"""Deterministic audit control framework and built-in controls."""
+"""Deterministic audit control frameworks and built-in record controls."""
 
 from audit_compiler.controls.base import (
+    CalcInput,
+    Calculation,
     CalculationStep,
     Control,
     ControlContext,
     ControlOutcome,
+    CounterTest,
     CounterTestResult,
     CounterTestStatus,
+    DossierControl,
+    EvidenceStep,
+    Finding,
     OutcomeStatus,
     RuleParameters,
     SupportingEvidence,
@@ -52,9 +58,11 @@ from audit_compiler.controls.vendor_integrity import (
 
 __all__ = [
     "AccountClassification",
-    "CalculationStep",
     "ApprovalLogRecord",
     "AssetDescriptionRecord",
+    "CalcInput",
+    "Calculation",
+    "CalculationStep",
     "CapitalizationControl",
     "CapitalizationInvoiceRecord",
     "CapitalizationOutcome",
@@ -67,8 +75,12 @@ __all__ = [
     "Control",
     "ControlContext",
     "ControlOutcome",
+    "CounterTest",
     "CounterTestResult",
     "CounterTestStatus",
+    "DossierControl",
+    "EvidenceStep",
+    "Finding",
     "FixedAssetAdditionRecord",
     "GeneralLedgerPostingRecord",
     "OutcomeStatus",

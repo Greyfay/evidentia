@@ -2,6 +2,15 @@
 data/
 .admissible/
 
+# Secrets
+.env
+
+# Node / Next.js frontend
+web/node_modules/
+web/.next/
+web/out/
+node_modules/
+
 # Python tooling
 __pycache__/
 *.py[cod]
