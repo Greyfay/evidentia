@@ -1,0 +1,13 @@
+# Local audit dossiers and generated evidence stores must never be committed.
+data/
+.admissible/
+
+# Python tooling
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+dist/
+build/
+*.egg-info/
