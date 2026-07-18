@@ -3,9 +3,19 @@
 import { useEffect } from "react";
 import { useInvestigation } from "@/lib/investigation-context";
 import { useLang } from "@/lib/i18n";
+import { sourceFileUrl } from "@/lib/investigation-api";
+import SourceFilePreview from "./SourceFilePreview";
 
 export default function InvestigationEvidenceDrawer() {
-  const { activeEvidenceId, activeEvidence, evidenceLoading, evidenceError, closeEvidence } = useInvestigation();
+  const {
+    activeEvidenceId,
+    activeEvidence,
+    evidenceLoading,
+    evidenceError,
+    closeEvidence,
+    investigation,
+    demoMode,
+  } = useInvestigation();
   const { t } = useLang();
   const open = activeEvidenceId !== null;
 
@@ -87,6 +97,19 @@ export default function InvestigationEvidenceDrawer() {
                 <dt style={{ color: "var(--text-2)" }}>{t("drawer.kind")}</dt>
                 <dd style={{ color: "var(--text-0)" }}>{activeEvidence.kind}</dd>
               </dl>
+
+              {!demoMode && investigation && activeEvidenceId && activeEvidence.source_path && (
+                <div>
+                  <div className="text-[10px] tracking-[0.14em] uppercase mb-1.5" style={{ color: "var(--text-2)" }}>
+                    {t("sourceFile.title")}
+                  </div>
+                  <SourceFilePreview
+                    url={sourceFileUrl(investigation.investigation_id, activeEvidenceId)}
+                    sourcePath={activeEvidence.source_path}
+                    locator={activeEvidence.locator}
+                  />
+                </div>
+              )}
             </div>
           )}
         </div>

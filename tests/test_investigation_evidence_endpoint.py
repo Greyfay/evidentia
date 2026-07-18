@@ -89,12 +89,19 @@ async def test_resolves_investigation_evidence_to_exact_source(
     )
     assert response.status_code == 200, response.text
     body = response.json()
-    assert set(body) == {"evidence_id", "kind", "source", "snippet"}
+    assert set(body) == {
+        "evidence_id", "kind", "source", "snippet",
+        "source_path", "locator", "file_sha256",
+    }
     assert body["evidence_id"] == evidence_id
     assert body["kind"] == "csv_row"
     assert body["snippet"] == "VEND-1"  # the exact raw source value
     assert "invoices.csv" in body["source"]
     assert "row" in body["source"]
+    # The new fields let the client pick a viewer and deep-link the cited coordinate.
+    assert body["source_path"] == "invoices.csv"
+    assert body["locator"]["row"] == 2  # INV-1 is the second physical line
+    assert len(body["file_sha256"]) == 64  # sha-256 hex digest
 
 
 async def test_unknown_evidence_id_is_404(client: AsyncClient, tmp_path: Path) -> None:
@@ -110,6 +117,64 @@ async def test_unknown_investigation_is_404(client: AsyncClient) -> None:
     response = await client.get("/investigations/nope/evidence/ev_0000000000000000")
     assert response.status_code == 404
     assert response.json() == {"detail": "investigation not found"}
+
+
+async def test_source_file_streams_the_original_upload(
+    client: AsyncClient, tmp_path: Path
+) -> None:
+    """The source-file route serves the exact original file the auditor uploaded, byte for
+    byte, inline so the browser can render it in place."""
+
+    investigation_id, evidence_id = _seed_investigation(tmp_path)
+    response = await client.get(
+        f"/investigations/{investigation_id}/evidence/{evidence_id}/source-file"
+    )
+    assert response.status_code == 200, response.text
+    assert response.content == (tmp_path / "invoices.csv").read_bytes()
+    assert response.headers["content-type"].startswith("text/csv")
+    assert "inline" in response.headers.get("content-disposition", "")
+
+
+async def test_source_file_unknown_evidence_is_404(
+    client: AsyncClient, tmp_path: Path
+) -> None:
+    investigation_id, _ = _seed_investigation(tmp_path)
+    response = await client.get(
+        f"/investigations/{investigation_id}/evidence/ev_deadbeefdeadbeef/source-file"
+    )
+    assert response.status_code == 404
+
+
+async def test_source_file_unknown_investigation_is_404(client: AsyncClient) -> None:
+    response = await client.get(
+        "/investigations/nope/evidence/ev_0000000000000000/source-file"
+    )
+    assert response.status_code == 404
+
+
+def test_serve_source_file_rejects_traversal(tmp_path: Path) -> None:
+    """A source_path that resolves outside the dossier root is refused, never served."""
+
+    from fastapi import HTTPException
+
+    from audit_compiler.api.investigations import _serve_source_file
+
+    (tmp_path / "secret.txt").write_text("do not serve me")
+    root = tmp_path / "dossier"
+    root.mkdir()
+    with pytest.raises(HTTPException) as exc:
+        _serve_source_file(root, "../secret.txt")
+    assert exc.value.status_code == 404
+
+
+def test_serve_source_file_missing_file_is_404(tmp_path: Path) -> None:
+    from fastapi import HTTPException
+
+    from audit_compiler.api.investigations import _serve_source_file
+
+    with pytest.raises(HTTPException) as exc:
+        _serve_source_file(tmp_path, "nope.csv")
+    assert exc.value.status_code == 404
 
 
 async def test_bundle_scoped_evidence_route_still_works(client: AsyncClient) -> None:

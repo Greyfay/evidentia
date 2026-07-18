@@ -79,6 +79,12 @@ export async function getInvestigationEvidence(
   return json(res);
 }
 
+/** Absolute URL of the original uploaded file backing an evidence id — for an <iframe>,
+ *  a text fetch, or a download link. Only meaningful for live (non-demo) investigations. */
+export function sourceFileUrl(investigationId: string, evidenceId: string): string {
+  return `${API_BASE}/investigations/${investigationId}/evidence/${evidenceId}/source-file`;
+}
+
 export type HypothesisAction = "dismiss" | "submit" | "continue" | "challenge";
 
 export async function actOnHypothesis(

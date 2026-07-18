@@ -71,11 +71,23 @@ export interface TimelineEvent {
 // Unified source record returned by the evidence endpoint (live) or mapped
 // from the bundled fixture (demo). source = human-readable pointer; snippet =
 // the exact source text/number.
+export interface EvidenceLocator {
+  row: number | null;
+  sheet: string | null;
+  cell: string | null;
+  page: number | null;
+  passage: string | null;
+}
+
 export interface EvidenceView {
   evidence_id: string;
   kind: string;
   source: string;
   snippet: string;
+  // Present for live investigations; absent in demo/fixture mode (no real file on disk).
+  source_path?: string | null;
+  locator?: EvidenceLocator | null;
+  file_sha256?: string | null;
 }
 
 export type InvestigationStatus =

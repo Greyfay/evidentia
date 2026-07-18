@@ -149,6 +149,12 @@ const STRINGS: Record<Lang, Record<string, string>> = {
     "drawer.missing": "No source record found for this evidence id.",
     "drawer.chain": "Chain of custody verified against the source hash at compile time.",
     "drawer.close": "Close",
+    "sourceFile.title": "Source file",
+    "sourceFile.loading": "Loading the source file…",
+    "sourceFile.error": "Could not load the source file.",
+    "sourceFile.unavailable": "Inline preview isn't available for this file type.",
+    "sourceFile.download": "Download original",
+    "sourceFile.open": "Open in new tab",
   },
   de: {
     "nav.caseBoard": "Fallübersicht",
@@ -289,6 +295,12 @@ const STRINGS: Record<Lang, Record<string, string>> = {
     "drawer.missing": "Kein Quellen-Datensatz für diese Nachweis-ID gefunden.",
     "drawer.chain": "Lückenlose Nachweiskette gegen den Quell-Hash zur Kompilierzeit verifiziert.",
     "drawer.close": "Schließen",
+    "sourceFile.title": "Quelldatei",
+    "sourceFile.loading": "Quelldatei wird geladen…",
+    "sourceFile.error": "Die Quelldatei konnte nicht geladen werden.",
+    "sourceFile.unavailable": "Für diesen Dateityp ist keine Inline-Vorschau verfügbar.",
+    "sourceFile.download": "Original herunterladen",
+    "sourceFile.open": "In neuem Tab öffnen",
   },
 };
 
