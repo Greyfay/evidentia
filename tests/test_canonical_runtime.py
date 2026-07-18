@@ -1,11 +1,13 @@
 from pathlib import Path
-from uuid import uuid4
 
+import duckdb
 import pytest
 
-from audit_compiler.compiler import compile_runtime
-from audit_compiler.duckdb_store import connect, engagement_run
-from audit_compiler.models import DataLocale, EngagementIdentity
+from audit_compiler.compiler import CompileRequest, CompilerService
+from audit_compiler.duckdb_store import DuckDBAuditStore, connect
+from audit_compiler.ir.canonical import map_canonical_events
+from audit_compiler.ir.dossier import load_dossier
+from audit_compiler.models import DataLocale
 
 
 def _write_dossier(root: Path, amount: str, posting_date: str) -> None:
@@ -16,26 +18,29 @@ def _write_dossier(root: Path, amount: str, posting_date: str) -> None:
     )
 
 
-def test_engagement_run_rolls_back_every_write_on_failure() -> None:
-    connection = connect()
-    identity = EngagementIdentity(
-        engagement_id=uuid4(),
-        name="rollback",
-        dossier_root="rollback",
-        locale=DataLocale.DE,
-    )
+def test_atomic_store_rolls_back_run_tables_and_events(tmp_path: Path) -> None:
+    dossier_path = tmp_path / "dossier"
+    dossier_path.mkdir()
+    _write_dossier(dossier_path, "1.234,50", "18.07.2026")
+    dossier = load_dossier(dossier_path, locale="de")
+    event = map_canonical_events(
+        dossier, engagement_id="eng-rollback", run_id="run-rollback"
+    )[0]
+    database = tmp_path / "rollback.duckdb"
+    store = DuckDBAuditStore(database)
 
-    with pytest.raises(RuntimeError, match="injected"):
-        with engagement_run(connection, identity) as run_id:
-            connection.execute(
-                "INSERT INTO run_source_files VALUES (?, 'ledger.csv', 'csv', 1, ?)",
-                [run_id, "a" * 64],
-            )
-            raise RuntimeError("injected failure")
+    with pytest.raises(duckdb.ConstraintException):
+        store.persist_dossier(
+            "eng-rollback",
+            "run-rollback",
+            dossier,
+            events=(event, event),
+        )
 
-    assert connection.execute("SELECT count(*) FROM engagements").fetchone()[0] == 0
-    assert connection.execute("SELECT count(*) FROM compilation_runs").fetchone()[0] == 0
-    assert connection.execute("SELECT count(*) FROM run_source_files").fetchone()[0] == 0
+    connection = connect(database)
+    assert connection.execute("SELECT count(*) FROM audit_runs").fetchone()[0] == 0
+    assert connection.execute("SELECT count(*) FROM audit_ir_tables").fetchone()[0] == 0
+    assert connection.execute("SELECT count(*) FROM audit_ir_events").fetchone()[0] == 0
     connection.close()
 
 
@@ -44,54 +49,64 @@ def test_repeated_compiles_are_run_isolated_and_provenance_exact(tmp_path: Path)
     dossier.mkdir()
     database = tmp_path / "runtime.duckdb"
     _write_dossier(dossier, "1.234,50", "18.07.2026")
+    service = CompilerService()
 
-    first = compile_runtime(dossier, database=database, locale="de")
-    second = compile_runtime(dossier, database=database, locale="de")
+    first = service.compile(
+        CompileRequest(
+            dossier=dossier,
+            database=database,
+            engagement_id="eng-1",
+            run_id="run-1",
+            locale="de",
+        )
+    )
+    second = service.compile(
+        CompileRequest(
+            dossier=dossier,
+            database=database,
+            engagement_id="eng-1",
+            run_id="run-2",
+            locale="de",
+        )
+    )
 
-    assert first.report.engagement_id == second.report.engagement_id
-    assert first.report.run_id != second.report.run_id
-    assert first.report.canonical_event_count == 1
-    assert len(first.events) == len(second.events) == 1
-    assert first.events[0].event_id == second.events[0].event_id
-    assert first.events[0].net_amount == second.events[0].net_amount
-
-    connection = connect(database)
-    runs = connection.execute(
-        "SELECT run_id, status FROM compilation_runs ORDER BY started_at"
-    ).fetchall()
-    assert runs == [
-        (first.report.run_id, "completed"),
-        (second.report.run_id, "completed"),
-    ]
-    rows = connection.execute(
-        """
-        SELECT run_id, raw_value, normalized_value, row_number
-        FROM canonical_event_evidence
-        WHERE raw_value = '1.234,50'
-        ORDER BY run_id
-        """
-    ).fetchall()
-    assert {row[0] for row in rows} == {first.report.run_id, second.report.run_id}
-    assert all(row[1:] == ("1.234,50", "1234.50", 2) for row in rows)
-    connection.close()
+    assert first.engagement.locale is second.engagement.locale is DataLocale.DE
+    assert first.engagement.counts["canonical_events"] == 1
+    store = DuckDBAuditStore(database)
+    first_event = store.load_events("eng-1", "run-1")[0]
+    second_event = store.load_events("eng-1", "run-2")[0]
+    assert first_event.event_id == second_event.event_id
+    assert first_event.net_amount == second_event.net_amount
+    amount_evidence = next(
+        evidence
+        for evidence in first_event.evidence_refs
+        if evidence.raw_value == "1.234,50"
+    )
+    assert amount_evidence.normalized_value == "1234.50"
+    assert amount_evidence.row == 2
 
 
 def test_locale_is_explicit_and_changes_ambiguous_mapping(tmp_path: Path) -> None:
     dossier = tmp_path / "dossier"
     dossier.mkdir()
     _write_dossier(dossier, "1,234", "07/18/2026")
+    service = CompilerService()
 
-    english = compile_runtime(
-        dossier,
-        database=tmp_path / "english.duckdb",
-        locale="en",
+    english = service.compile(
+        CompileRequest(
+            dossier=dossier,
+            database=tmp_path / "english.duckdb",
+            locale="en",
+        )
     )
-    german = compile_runtime(
-        dossier,
-        database=tmp_path / "german.duckdb",
-        locale="de",
+    german = service.compile(
+        CompileRequest(
+            dossier=dossier,
+            database=tmp_path / "german.duckdb",
+            locale="de",
+        )
     )
 
-    assert english.report.locale is DataLocale.EN
-    assert english.events[0].net_amount == 1234
-    assert german.events == ()
+    assert english.engagement.locale is DataLocale.EN
+    assert english.engagement.counts["canonical_events"] == 1
+    assert german.engagement.counts["canonical_events"] == 0

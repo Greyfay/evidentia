@@ -13,13 +13,11 @@ import csv
 import io
 from dataclasses import dataclass
 from pathlib import Path
-from uuid import NAMESPACE_URL, uuid5
 
 from audit_compiler.adapters.gdpdu import compile_gdpdu_dossier
+from audit_compiler.adapters.xlsx import parse_xlsx_workbook
 from audit_compiler.inventory import inventory_dossier, sha256_file
 from audit_compiler.models import DataLocale, EvidenceRef, SourceType
-
-_EVIDENCE_NAMESPACE = uuid5(NAMESPACE_URL, "evidentia/source-evidence")
 
 
 @dataclass(frozen=True)
@@ -45,12 +43,7 @@ class SourceTable:
             cell = f"{_column_letter(self.columns.index(column))}{self.row_numbers[index]}"
         page = self.page_numbers[index] if self.page_numbers else None
         passage = raw_value[:200] if self.source_type is SourceType.PDF_PASSAGE else None
-        locator = (
-            f"{self.file_sha256}:{self.source_path}:{self.sheet or ''}:"
-            f"{self.row_numbers[index]}:{column}:{page or ''}"
-        )
-        return EvidenceRef(
-            evidence_id=uuid5(_EVIDENCE_NAMESPACE, locator),
+        return EvidenceRef.canonical(
             source_path=self.source_path,
             source_type=self.source_type,
             file_sha256=self.file_sha256,
@@ -113,45 +106,42 @@ def _load_header_csv(path: Path, root: Path) -> SourceTable:
     )
 
 
-def _load_xlsx(path: Path, root: Path) -> list[SourceTable]:
-    from openpyxl import load_workbook
+def _load_xlsx(
+    path: Path, root: Path, *, locale: DataLocale
+) -> list[SourceTable]:
+    """Adapt the one native XLSX parse into AIR source tables."""
 
-    workbook = load_workbook(path, data_only=True, read_only=True)
-    file_sha256 = sha256_file(path)
-    rel = _rel(path, root)
+    workbook = parse_xlsx_workbook(
+        path, dossier_root=root, locale=locale.value
+    )
     tables: list[SourceTable] = []
-    for worksheet in workbook.worksheets:
-        grid = [list(row) for row in worksheet.iter_rows(values_only=True)]
-        header_index = next(
-            (i for i, row in enumerate(grid) if sum(cell not in (None, "") for cell in row) >= 2),
-            None,
-        )
-        if header_index is None:
+    for sheet in workbook.sheets:
+        if sheet.header_row is None:
             continue
-        header = [str(cell).strip() if cell not in (None, "") else f"col{i}"
-                  for i, cell in enumerate(grid[header_index])]
+        cells = {(cell.row_number, cell.column_number): cell for cell in sheet.cells}
         rows: list[dict[str, str]] = []
         row_numbers: list[int] = []
-        for offset, values in enumerate(grid[header_index + 1:], start=header_index + 2):
-            if not any(cell not in (None, "") for cell in values):
+        for record in sheet.records:
+            values = {
+                header: cells[(record.row_number, column)].raw_value
+                for column, header in enumerate(sheet.headers, start=1)
+            }
+            if not any(values.values()):
                 continue
-            padded = list(values) + [None] * (len(header) - len(values))
-            rows.append({header[i]: ("" if padded[i] is None else str(padded[i]))
-                         for i in range(len(header))})
-            row_numbers.append(offset)
+            rows.append(values)
+            row_numbers.append(record.row_number)
         tables.append(
             SourceTable(
-                name=f"{path.stem}:{worksheet.title}",
-                source_path=rel,
-                file_sha256=file_sha256,
+                name=f"{path.stem}:{sheet.name}",
+                source_path=workbook.source_file.path,
+                file_sha256=workbook.source_file.sha256,
                 source_type=SourceType.XLSX_CELL,
-                columns=tuple(header),
+                columns=sheet.headers,
                 rows=tuple(rows),
                 row_numbers=tuple(row_numbers),
-                sheet=worksheet.title,
+                sheet=sheet.name,
             )
         )
-    workbook.close()
     return tables
 
 
@@ -274,7 +264,11 @@ def load_dossier(
             continue
         path = root / source.path
         try:
-            result = loader(path, root)
+            result = (
+                _load_xlsx(path, root, locale=explicit_locale)
+                if source.file_type == "xlsx"
+                else loader(path, root)
+            )
         except Exception as exc:  # noqa: BLE001 - never fabricate; record and continue
             warnings.append((source.path, f"parse failed: {exc}"))
             continue

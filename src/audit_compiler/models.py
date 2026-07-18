@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
-from datetime import UTC, date, datetime
+import json
+from datetime import date, datetime
 from decimal import Decimal
 from enum import StrEnum
 from hashlib import sha256
-from typing import Annotated, Any
-from uuid import UUID, uuid4
+from typing import Annotated, Any, Literal
+from uuid import NAMESPACE_URL, UUID, uuid4, uuid5
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -37,16 +38,10 @@ class ControlStatus(StrEnum):
 
 
 class DataLocale(StrEnum):
-    """The explicit convention used for source amounts and dates."""
+    """Explicit amount and date convention for an engagement."""
 
     DE = "de"
     EN = "en"
-
-
-class RunStatus(StrEnum):
-    RUNNING = "running"
-    COMPLETED = "completed"
-    FAILED = "failed"
 
 
 Sha256 = Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
@@ -57,6 +52,16 @@ class ImmutableModel(BaseModel):
     """Base model that rejects unknown fields and mutation after construction."""
 
     model_config = ConfigDict(extra="forbid", frozen=True)
+
+    def deterministic_json(self) -> str:
+        """Return a byte-stable JSON representation for hashing and replay."""
+
+        return json.dumps(
+            self.model_dump(mode="json", exclude_none=False),
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
 
 
 class EvidenceRef(ImmutableModel):
@@ -96,41 +101,25 @@ class EvidenceRef(ImmutableModel):
             raise ValueError("source_path must be a safe dossier-relative path")
         return value
 
+    @classmethod
+    def canonical(cls, **values: Any) -> EvidenceRef:
+        """Build a content-addressed reference with a deterministic UUID."""
 
-class EngagementIdentity(ImmutableModel):
-    """Stable identity and normalization policy for a compiled dossier."""
-
-    engagement_id: UUID
-    name: str = Field(min_length=1)
-    dossier_root: str = Field(min_length=1)
-    locale: DataLocale
-
-
-class CompilationRun(ImmutableModel):
-    """One isolated attempt to compile an engagement."""
-
-    run_id: UUID = Field(default_factory=uuid4)
-    engagement_id: UUID
-    status: RunStatus = RunStatus.RUNNING
-    started_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
-    completed_at: datetime | None = None
-    error: str | None = None
-
-    @model_validator(mode="after")
-    def completion_matches_status(self) -> CompilationRun:
-        if self.status is RunStatus.RUNNING and self.completed_at is not None:
-            raise ValueError("a running compilation cannot have completed_at")
-        if self.status is not RunStatus.RUNNING and self.completed_at is None:
-            raise ValueError("a finished compilation requires completed_at")
-        if self.status is RunStatus.FAILED and not self.error:
-            raise ValueError("a failed compilation requires an error")
-        return self
+        locator = "|".join(
+            str(values.get(key) or "")
+            for key in ("source_path", "row", "sheet", "cell", "page", "passage")
+        )
+        raw_hash = sha256(str(values.get("raw_value", "")).encode("utf-8")).hexdigest()
+        values["evidence_id"] = uuid5(NAMESPACE_URL, f"evidentia/evidence/{locator}|{raw_hash}")
+        return cls(**values)
 
 
 class FinancialEvent(ImmutableModel):
     """A normalized accounting event that cannot exist without provenance."""
 
     event_id: UUID = Field(default_factory=uuid4)
+    engagement_id: str = "legacy"
+    run_id: str = "legacy"
     kind: str = Field(min_length=1)
     occurred_on: date
     party_ids: tuple[str, ...] = ()
@@ -147,6 +136,85 @@ class FinancialEvent(ImmutableModel):
     def reject_float_money(cls, value: object) -> object:
         if isinstance(value, float):
             raise ValueError("money must be supplied as Decimal, integer, or string; never float")
+        return value
+
+
+class CanonicalPayment(ImmutableModel):
+    """One exact, provenance-bearing payment in the canonical Audit IR."""
+
+    payment_id: str = Field(min_length=1)
+    engagement_id: str = Field(min_length=1)
+    run_id: str = Field(min_length=1)
+    vendor_id: str = Field(min_length=1)
+    payment_date: date
+    amount: Decimal
+    currency: str = Field(default="EUR", min_length=3, max_length=3)
+    invoice_id: str | None = None
+    approved_by: str | None = None
+    reversal_of: str | None = None
+    evidence_refs: EvidenceList
+
+    @field_validator("amount", mode="before")
+    @classmethod
+    def reject_float_amount(cls, value: object) -> object:
+        if isinstance(value, float):
+            raise ValueError("money must never be supplied as float")
+        return value
+
+
+CounterOutcome = Literal["absent", "present", "not_applicable"]
+
+
+class CounterTest(ImmutableModel):
+    name: str = Field(min_length=1)
+    outcome: CounterOutcome
+    detail: str
+    required: bool = True
+    evidence: tuple[EvidenceRef, ...] = ()
+
+
+class CalculationInput(ImmutableModel):
+    label: str
+    value: Decimal
+    evidence_id: UUID
+
+    @field_validator("value", mode="before")
+    @classmethod
+    def reject_float_value(cls, value: object) -> object:
+        if isinstance(value, float):
+            raise ValueError("money must never be supplied as float")
+        return value
+
+
+class CanonicalCalculation(ImmutableModel):
+    expression: str
+    inputs: tuple[CalculationInput, ...]
+    result: Decimal
+    sql: str
+
+
+class ControlOutcome(ImmutableModel):
+    """Candidate output. Deliberately has no final-verdict field."""
+
+    outcome_id: UUID
+    engagement_id: str
+    run_id: str
+    control_id: str
+    control_version: str
+    status: Literal["candidate", "cleared", "inconclusive"]
+    subject: str
+    event_ids: tuple[UUID, ...] = ()
+    exposure_amount: Decimal
+    calculation: CanonicalCalculation
+    evidence_refs: EvidenceList
+    counter_tests: tuple[CounterTest, ...]
+    uncertainty: str | None = None
+
+    @field_validator("exposure_amount", mode="before")
+    @classmethod
+    def reject_float_exposure_amount(cls, value: object) -> object:
+        if isinstance(value, float):
+            raise ValueError("money must never be supplied as float")
         return value
 
 
@@ -173,12 +241,21 @@ class ControlResult(ImmutableModel):
 
 
 class Case(ImmutableModel):
-    """A reviewer-facing case with evidence, results, and an explicit disposition."""
+    """Admission-owned final case contract.
+
+    The legacy ``status``/``control_result_ids`` fields remain optional during migration.
+    New production code uses ``verdict`` and the engagement/run boundary.
+    """
 
     case_id: UUID = Field(default_factory=uuid4)
     title: str = Field(min_length=1)
-    status: CaseStatus
-    control_result_ids: tuple[UUID, ...]
+    engagement_id: str = "legacy"
+    run_id: str = "legacy"
+    control_id: str = "legacy"
+    control_version: str = "legacy"
+    verdict: Literal["CONFIRMED", "HUMAN_REVIEW", "DISMISSED", "REJECTED"] | None = None
+    status: CaseStatus | None = None
+    control_result_ids: tuple[UUID, ...] = ()
     evidence_refs: EvidenceList
     financial_event_ids: tuple[UUID, ...] = ()
     financial_impact: Decimal | None = None
@@ -192,3 +269,34 @@ class Case(ImmutableModel):
         if isinstance(value, float):
             raise ValueError("money must be supplied as Decimal, integer, or string; never float")
         return value
+
+
+class SourceCompilation(ImmutableModel):
+    path: str
+    type: str
+    bytes: int = Field(ge=0)
+    sha256: Sha256
+    status: str
+    source_rows: int = Field(ge=0)
+    parsed_rows: int = Field(ge=0)
+    warnings: tuple[str, ...] = ()
+
+
+class EngagementSummary(ImmutableModel):
+    engagement_id: str
+    run_id: str
+    name: str
+    dossier_root: str
+    locale: DataLocale
+    compiled_at: datetime
+    methodology_version: str
+    counts: dict[str, int]
+    source_files: tuple[SourceCompilation, ...]
+
+
+class CaseBundle(ImmutableModel):
+    """Deterministically serializable output of the canonical compiler service."""
+
+    schema_version: str = "2.0"
+    engagement: EngagementSummary
+    cases: tuple[dict[str, Any], ...]

@@ -12,7 +12,9 @@ from audit_compiler.normalization import parse_date, parse_decimal
 _EVENT_NAMESPACE = uuid5(NAMESPACE_URL, "evidentia/canonical-event")
 
 
-def map_canonical_events(dossier: LoadedDossier) -> tuple[FinancialEvent, ...]:
+def map_canonical_events(
+    dossier: LoadedDossier, *, engagement_id: str, run_id: str
+) -> tuple[FinancialEvent, ...]:
     """Map only rows with explicit date and amount roles; never infer missing values."""
 
     events: list[FinancialEvent] = []
@@ -43,6 +45,8 @@ def map_canonical_events(dossier: LoadedDossier) -> tuple[FinancialEvent, ...]:
             events.append(
                 FinancialEvent(
                     event_id=uuid5(_EVENT_NAMESPACE, row_key),
+                    engagement_id=engagement_id,
+                    run_id=run_id,
                     kind=row[kind_column] if kind_column and row[kind_column] else "posting",
                     occurred_on=occurred_on,
                     party_ids=(row[party_column],) if party_column and row[party_column] else (),

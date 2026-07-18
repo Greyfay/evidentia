@@ -35,9 +35,21 @@ def _step(step: EvidenceStep) -> dict:
     return {"step": step.step, "evidence": [_evidence(e) for e in step.evidence]}
 
 
-def case_dict(finding: Finding, admission: Admission) -> dict:
+def case_dict(
+    finding: Finding,
+    admission: Admission,
+    *,
+    engagement_id: str = "legacy",
+    run_id: str = "legacy",
+) -> dict:
+    """Build a final case only from an admission-gate decision."""
+
     return {
-        "case_id": str(uuid5(_NS, f"{finding.control_id}:{finding.subject}")),
+        "case_id": str(
+            uuid5(_NS, f"{engagement_id}:{run_id}:{finding.control_id}:{finding.subject}")
+        ),
+        "engagement_id": engagement_id,
+        "run_id": run_id,
         "title": finding.title,
         "control_id": finding.control_id,
         "control_version": finding.control_version,
