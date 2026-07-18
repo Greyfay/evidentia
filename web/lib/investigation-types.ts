@@ -64,6 +64,18 @@ export interface TimelineEvent {
   tool_name?: string;
   verdict?: string;
   detail?: string;
+  // assistant_reply events may cite the evidence that grounds the answer.
+  evidence_ids?: string[];
+}
+
+// Unified source record returned by the evidence endpoint (live) or mapped
+// from the bundled fixture (demo). source = human-readable pointer; snippet =
+// the exact source text/number.
+export interface EvidenceView {
+  evidence_id: string;
+  kind: string;
+  source: string;
+  snippet: string;
 }
 
 export type InvestigationStatus =
@@ -112,6 +124,9 @@ export interface GraphEdge {
 export interface InvestigationGraph {
   nodes: GraphNode[];
   edges: GraphEdge[];
+  // Backend signals whether a real relationship graph was available (Cognee /
+  // in-memory). Absent in the bundled fixture — treated as available there.
+  available?: boolean;
 }
 
 export interface InvestigationFixture {

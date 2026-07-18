@@ -1,37 +1,40 @@
 "use client";
 
 import { useInvestigation } from "@/lib/investigation-context";
+import { useLang, localizeText } from "@/lib/i18n";
+import EvidenceBadge from "./EvidenceBadge";
 import type { TimelineEventKind } from "@/lib/investigation-types";
 
-const KIND_META: Record<TimelineEventKind, { icon: string; color: string; label: string }> = {
-  hypothesis_created: { icon: "✦", color: "var(--steel)", label: "Hypothesis proposed" },
-  tool_selected: { icon: "→", color: "var(--text-2)", label: "Tool selected" },
-  tool_result: { icon: "✓", color: "var(--forest)", label: "Tool result" },
-  counter_evidence: { icon: "⚡", color: "var(--amber)", label: "Self-challenge" },
-  hypothesis_resolved: { icon: "◆", color: "var(--brick)", label: "Hypothesis resolved" },
-  auditor_message: { icon: "»", color: "var(--steel)", label: "Auditor" },
-  assistant_reply: { icon: "«", color: "var(--text-1)", label: "Agent" },
-  stopped: { icon: "■", color: "var(--slate)", label: "Stopped" },
-  completed: { icon: "●", color: "var(--forest)", label: "Completed" },
+const KIND_META: Record<TimelineEventKind, { icon: string; color: string }> = {
+  hypothesis_created: { icon: "✦", color: "var(--steel)" },
+  tool_selected: { icon: "→", color: "var(--text-2)" },
+  tool_result: { icon: "✓", color: "var(--forest)" },
+  counter_evidence: { icon: "⚡", color: "var(--amber)" },
+  hypothesis_resolved: { icon: "◆", color: "var(--brick)" },
+  auditor_message: { icon: "»", color: "var(--steel)" },
+  assistant_reply: { icon: "«", color: "var(--text-1)" },
+  stopped: { icon: "■", color: "var(--slate)" },
+  completed: { icon: "●", color: "var(--forest)" },
 };
 
 export default function InvestigationTimeline() {
   const { investigation } = useInvestigation();
+  const { t, lang } = useLang();
   if (!investigation) return null;
 
   const events = [...investigation.timeline].sort((a, b) => Date.parse(a.at) - Date.parse(b.at));
 
   return (
-    <section className="mb-10">
-      <h2 className="text-[11px] tracking-[0.16em] uppercase mb-3" style={{ color: "var(--text-2)" }}>
-        6 · Investigation timeline
-      </h2>
+    <details className="mt-8 border-t pt-6" style={{ borderColor: "var(--hairline)" }}>
+      <summary className="cursor-pointer select-none text-[11px] tracking-[0.16em] uppercase" style={{ color: "var(--text-2)" }}>
+        {t("log.title")}{events.length ? ` · ${events.length} ${t("log.events")}` : ""}
+      </summary>
       {events.length === 0 ? (
-        <p className="text-xs" style={{ color: "var(--text-2)" }}>No events yet — run the first step.</p>
+        <p className="mt-3 text-xs" style={{ color: "var(--text-2)" }}>{t("log.none")}</p>
       ) : (
-        <ol className="relative flex flex-col gap-4 pl-5" style={{ borderLeft: "1.5px solid var(--hairline-strong)" }}>
+        <ol className="relative mt-4 flex flex-col gap-4 pl-5" style={{ borderLeft: "1.5px solid var(--hairline-strong)" }}>
           {events.map((e, i) => {
-            const meta = KIND_META[e.kind] ?? { icon: "•", color: "var(--text-2)", label: e.kind };
+            const meta = KIND_META[e.kind] ?? { icon: "•", color: "var(--text-2)" };
             return (
               <li key={i} className="relative" style={{ animation: "rise-in 220ms ease-out both", animationDelay: `${Math.min(i, 20) * 20}ms` }}>
                 <span
@@ -43,7 +46,7 @@ export default function InvestigationTimeline() {
                 </span>
                 <div className="flex flex-wrap items-baseline gap-2">
                   <span className="text-[10.5px] font-semibold tracking-[0.05em] uppercase" style={{ color: meta.color }}>
-                    {meta.label}
+                    {t(`kind.${e.kind}`)}
                   </span>
                   {e.tool_name && (
                     <span className="font-mono text-[10.5px]" style={{ color: "var(--text-2)" }}>
@@ -61,14 +64,21 @@ export default function InvestigationTimeline() {
                 </div>
                 {e.detail && (
                   <p className="mt-1 text-[12.5px] leading-relaxed" style={{ color: "var(--text-1)" }}>
-                    {e.detail}
+                    {localizeText(e.detail, lang)}
                   </p>
+                )}
+                {e.evidence_ids && e.evidence_ids.length > 0 && (
+                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                    {e.evidence_ids.map((id) => (
+                      <EvidenceBadge key={id} evidenceId={id} />
+                    ))}
+                  </div>
                 )}
               </li>
             );
           })}
         </ol>
       )}
-    </section>
+    </details>
   );
 }

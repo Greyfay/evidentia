@@ -1,17 +1,19 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useId, useState } from "react";
 import { useInvestigation } from "@/lib/investigation-context";
+import { useLang } from "@/lib/i18n";
 import { formatBytes } from "@/lib/format";
 
 export default function UploadZone() {
-  const { engagement, uploading, uploadDossier, starting, startInvestigation, usingFallback, investigation } =
+  const { engagement, uploading, uploadDossier, starting, startInvestigation, investigation } =
     useInvestigation();
+  const { t } = useLang();
   const [dragging, setDragging] = useState(false);
-  const [objective, setObjective] = useState(
-    "Determine whether Q4 vendor onboarding created undisclosed related-party or segregation-of-duties exposure.",
-  );
-  const inputRef = useRef<HTMLInputElement>(null);
+  // Until the auditor edits it, the objective tracks the language's sample text.
+  const [editedObjective, setEditedObjective] = useState<string | null>(null);
+  const objective = editedObjective ?? t("upload.objectiveDefault");
+  const inputId = useId();
 
   const handleFile = useCallback(
     (file: File | undefined) => {
@@ -21,103 +23,114 @@ export default function UploadZone() {
     [uploadDossier],
   );
 
-  return (
-    <section className="mb-10">
-      <div className="flex items-baseline justify-between mb-3">
-        <h2 className="text-[11px] tracking-[0.16em] uppercase" style={{ color: "var(--text-2)" }}>
-          1 · Dossier
-        </h2>
-        {usingFallback && (
-          <span className="text-[10.5px] font-mono" style={{ color: "var(--amber)" }}>
-            demo data
-          </span>
-        )}
-      </div>
+  // --- Once the investigation is running, the dossier collapses to a slim strip ---
+  if (investigation && engagement) {
+    return (
+      <section className="mb-6 flex flex-wrap items-center gap-x-5 gap-y-1.5 border rounded-sm px-4 py-2.5"
+        style={{ borderColor: "var(--hairline)", background: "var(--ink-1)" }}>
+        <span className="text-[13px]" style={{ fontFamily: "var(--font-display)", color: "var(--text-0)" }}>
+          {engagement.name}
+        </span>
+        <span className="text-[11px]" style={{ color: "var(--text-2)" }}>
+          {engagement.counts.source_files} {t("upload.sourceFiles").toLowerCase()} ·{" "}
+          {engagement.counts.evidence_records} {t("upload.evidence").toLowerCase()} ·{" "}
+          {engagement.counts.entities} {t("upload.entities").toLowerCase()}
+        </span>
+      </section>
+    );
+  }
 
-      {!engagement ? (
-        <div
-          onDragOver={(e) => {
-            e.preventDefault();
-            setDragging(true);
-          }}
-          onDragLeave={() => setDragging(false)}
-          onDrop={(e) => {
-            e.preventDefault();
-            setDragging(false);
-            handleFile(e.dataTransfer.files[0]);
-          }}
-          onClick={() => inputRef.current?.click()}
-          className="cursor-pointer border border-dashed rounded-sm px-6 py-12 text-center transition-colors"
-          style={{
-            borderColor: dragging ? "var(--amber)" : "var(--hairline-strong)",
-            background: dragging ? "var(--amber-glow)" : "var(--ink-1)",
-          }}
-        >
-          <input
-            ref={inputRef}
-            type="file"
-            accept=".zip"
-            className="hidden"
-            onChange={(e) => handleFile(e.target.files?.[0])}
-          />
-          <p className="text-sm" style={{ color: "var(--text-1)" }}>
-            {uploading ? "Uploading and compiling dossier…" : "Drop a case dossier .zip, or click to choose one"}
-          </p>
-          <p className="mt-1.5 text-xs" style={{ color: "var(--text-2)" }}>
-            POST /engagements/upload — parsed into evidence records before any hypothesis is proposed.
-          </p>
-        </div>
-      ) : (
-        <div className="border rounded-sm p-4" style={{ borderColor: "var(--hairline)", background: "var(--ink-1)" }}>
+  // --- Dossier uploaded, waiting for an objective to begin ---
+  if (engagement) {
+    return (
+      <section className="mb-8">
+        <div className="border rounded-sm p-5" style={{ borderColor: "var(--hairline)", background: "var(--ink-1)" }}>
           <div className="flex flex-wrap items-baseline justify-between gap-3">
-            <h3 className="text-[15px]" style={{ fontFamily: "var(--font-display)", color: "var(--text-0)" }}>
+            <h3 className="text-[16px]" style={{ fontFamily: "var(--font-display)", color: "var(--text-0)" }}>
               {engagement.name}
             </h3>
-            <span className="font-mono text-[10.5px]" style={{ color: "var(--text-2)" }}>
-              {engagement.engagement_id}
+            <span className="text-[11px]" style={{ color: "var(--forest)" }}>
+              {t("upload.ready")}
             </span>
           </div>
-          <div className="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <Stat label="Source files" value={engagement.counts.source_files} />
-            <Stat label="Evidence records" value={engagement.counts.evidence_records} />
-            <Stat label="Entities" value={engagement.counts.entities} />
-            <Stat label="Events" value={engagement.counts.events} />
+          <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Stat label={t("upload.sourceFiles")} value={engagement.counts.source_files} />
+            <Stat label={t("upload.evidence")} value={engagement.counts.evidence_records} />
+            <Stat label={t("upload.entities")} value={engagement.counts.entities} />
+            <Stat label={t("upload.events")} value={engagement.counts.events} />
           </div>
           {engagement.source_files.length > 0 && (
             <ul className="mt-3 flex flex-col gap-1">
               {engagement.source_files.map((f) => (
-                <li key={f.path} className="flex items-center justify-between font-mono text-[11px]" style={{ color: "var(--text-2)" }}>
-                  <span className="truncate">{f.path}</span>
-                  <span>{formatBytes(f.bytes)}</span>
+                <li key={f.path} className="flex items-center justify-between text-[11px]" style={{ color: "var(--text-2)" }}>
+                  <span className="truncate font-mono">{f.path}</span>
+                  <span className="mono-num shrink-0 pl-3">{formatBytes(f.bytes)}</span>
                 </li>
               ))}
             </ul>
           )}
 
-          {!investigation && (
-            <div className="mt-5 pt-4 border-t flex flex-col gap-2.5" style={{ borderColor: "var(--hairline)" }}>
-              <label className="text-[10px] tracking-[0.14em] uppercase" style={{ color: "var(--text-2)" }}>
-                Investigation objective
-              </label>
-              <textarea
-                value={objective}
-                onChange={(e) => setObjective(e.target.value)}
-                rows={2}
-                className="w-full resize-none rounded-sm border px-3 py-2 text-sm outline-none"
-                style={{ background: "var(--ink-2)", borderColor: "var(--hairline-strong)", color: "var(--text-0)" }}
-              />
-              <button
-                onClick={() => void startInvestigation(objective)}
-                disabled={starting || !objective.trim()}
-                className="self-start rounded-sm border px-4 py-2 text-xs font-semibold tracking-[0.08em] uppercase transition-colors disabled:opacity-50"
-                style={{ borderColor: "var(--amber)", color: "var(--amber)", background: "var(--amber-glow)" }}
-              >
-                {starting ? "Starting investigation…" : "Start investigation"}
-              </button>
-            </div>
-          )}
+          <div className="mt-5 pt-4 border-t flex flex-col gap-2.5" style={{ borderColor: "var(--hairline)" }}>
+            <label htmlFor="objective" className="text-[10px] tracking-[0.14em] uppercase" style={{ color: "var(--text-2)" }}>
+              {t("upload.objective")}
+            </label>
+            <textarea
+              id="objective"
+              value={objective}
+              onChange={(e) => setEditedObjective(e.target.value)}
+              rows={2}
+              className="w-full resize-none rounded-sm border px-3 py-2 text-sm outline-none"
+              style={{ background: "var(--ink-2)", borderColor: "var(--hairline-strong)", color: "var(--text-0)" }}
+            />
+            <button
+              onClick={() => void startInvestigation(objective)}
+              disabled={starting || !objective.trim()}
+              className="self-start rounded-sm border px-4 py-2 text-xs font-semibold tracking-[0.08em] uppercase transition-colors disabled:opacity-50"
+              style={{ borderColor: "var(--amber)", color: "var(--amber)", background: "var(--amber-glow)" }}
+            >
+              {starting ? t("upload.beginning") : t("upload.begin")}
+            </button>
+          </div>
         </div>
-      )}
+      </section>
+    );
+  }
+
+  // --- No dossier yet: the upload dropzone ---
+  return (
+    <section className="mb-8">
+      <label
+        htmlFor={inputId}
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragging(true);
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setDragging(false);
+          handleFile(e.dataTransfer.files[0]);
+        }}
+        className="flex cursor-pointer flex-col items-center gap-2 border border-dashed rounded-sm px-6 py-14 text-center transition-colors"
+        style={{
+          borderColor: dragging ? "var(--amber)" : "var(--hairline-strong)",
+          background: dragging ? "var(--amber-glow)" : "var(--ink-1)",
+        }}
+      >
+        <input
+          id={inputId}
+          type="file"
+          accept=".zip"
+          className="sr-only"
+          onChange={(e) => handleFile(e.target.files?.[0])}
+        />
+        <span className="text-[15px]" style={{ fontFamily: "var(--font-display)", color: "var(--text-0)" }}>
+          {uploading ? t("upload.compiling") : t("upload.dropTitle")}
+        </span>
+        <span className="text-xs max-w-md leading-relaxed" style={{ color: "var(--text-2)" }}>
+          {uploading ? t("upload.compilingHint") : t("upload.dropHint")}
+        </span>
+      </label>
     </section>
   );
 }
@@ -125,7 +138,7 @@ export default function UploadZone() {
 function Stat({ label, value }: { label: string; value: number }) {
   return (
     <div>
-      <div className="font-mono mono-num text-lg" style={{ color: "var(--text-0)" }}>
+      <div className="mono-num text-lg" style={{ color: "var(--text-0)" }}>
         {value}
       </div>
       <div className="text-[9px] tracking-[0.1em] uppercase" style={{ color: "var(--text-2)" }}>
