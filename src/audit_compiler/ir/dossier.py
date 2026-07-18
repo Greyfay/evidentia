@@ -14,10 +14,10 @@ import io
 from dataclasses import dataclass
 from pathlib import Path
 
-from audit_compiler.adapters.gdpdu import parse_delimited_values, parse_gdpdu_index
+from audit_compiler.adapters.gdpdu import compile_gdpdu_dossier
 from audit_compiler.adapters.xlsx import parse_xlsx_workbook
 from audit_compiler.inventory import inventory_dossier, sha256_file
-from audit_compiler.models import DataLocale, EvidenceRef, SourceType
+from audit_compiler.models import EvidenceRef, SourceType
 
 
 @dataclass(frozen=True)
@@ -106,14 +106,10 @@ def _load_header_csv(path: Path, root: Path) -> SourceTable:
     )
 
 
-def _load_xlsx(
-    path: Path, root: Path, *, locale: DataLocale
-) -> list[SourceTable]:
+def _load_xlsx(path: Path, root: Path) -> list[SourceTable]:
     """Adapt the one native XLSX parse into AIR source tables."""
 
-    workbook = parse_xlsx_workbook(
-        path, dossier_root=root, locale=locale.value
-    )
+    workbook = parse_xlsx_workbook(path, dossier_root=root)
     tables: list[SourceTable] = []
     for sheet in workbook.sheets:
         if sheet.header_row is None:
@@ -195,7 +191,6 @@ class LoadedDossier:
     """Every parsed source table plus the raw file manifest and per-file warnings."""
 
     root: Path
-    locale: DataLocale
     tables: tuple[SourceTable, ...]
     warnings: tuple[tuple[str, str], ...]  # (source_path, message)
 
@@ -205,13 +200,10 @@ class LoadedDossier:
         return [t for t in self.tables if required.issubset(set(t.columns))]
 
 
-def load_dossier(
-    directory: Path, *, locale: DataLocale | str = DataLocale.DE
-) -> LoadedDossier:
+def load_dossier(directory: Path) -> LoadedDossier:
     """Parse every supported file in a dossier into provenance-bearing source tables."""
 
     root = directory.expanduser().resolve()
-    explicit_locale = DataLocale(locale)
     manifest = inventory_dossier(root)
     tables: list[SourceTable] = []
     warnings: list[tuple[str, str]] = []
@@ -224,37 +216,28 @@ def load_dossier(
         folder_prefix = "" if folder_prefix == "." else f"{folder_prefix}/"
         try:
             # GDPdU data-file URLs are relative to the index.xml directory.
-            definitions = parse_gdpdu_index(index_path, dossier_root=folder)
+            compilation = compile_gdpdu_dossier(index_path, dossier_root=folder)
         except Exception as exc:  # noqa: BLE001 - surfaced as a warning, never invented data
             warnings.append((_rel(index_path, root), f"GDPdU compile failed: {exc}"))
             continue
-        for definition in definitions:
-            source_path = f"{folder_prefix}{definition.source_path}"
+        for parsed in compilation.tables:
+            source_path = f"{folder_prefix}{parsed.definition.source_path}"
             gdpdu_data_paths.add(source_path)
-            try:
-                rows, row_numbers, file_sha256 = parse_delimited_values(
-                    folder / definition.source_path,
-                    definition,
-                    dossier_root=folder,
-                )
-            except Exception as exc:  # noqa: BLE001 - surfaced; no data is invented
-                warnings.append((source_path, f"GDPdU compile failed: {exc}"))
-                continue
-            columns = tuple(column.name for column in definition.columns)
+            columns = tuple(c.name for c in parsed.definition.columns)
             source_type = (
                 SourceType.CSV_ROW
-                if Path(definition.source_path).suffix.lower() == ".csv"
+                if parsed.source_file.file_type == "csv"
                 else SourceType.TEXT_ROW
             )
             tables.append(
                 SourceTable(
-                    name=definition.table_name,
+                    name=parsed.definition.table_name,
                     source_path=source_path,
-                    file_sha256=file_sha256,
+                    file_sha256=parsed.source_file.sha256,
                     source_type=source_type,
                     columns=columns,
-                    rows=rows,
-                    row_numbers=row_numbers,
+                    rows=tuple(record.named_values for record in parsed.records),
+                    row_numbers=tuple(record.row_number for record in parsed.records),
                 )
             )
 
@@ -273,19 +256,10 @@ def load_dossier(
             continue
         path = root / source.path
         try:
-            result = (
-                _load_xlsx(path, root, locale=explicit_locale)
-                if source.file_type == "xlsx"
-                else loader(path, root)
-            )
+            result = loader(path, root)
         except Exception as exc:  # noqa: BLE001 - never fabricate; record and continue
             warnings.append((source.path, f"parse failed: {exc}"))
             continue
         tables.extend(result if isinstance(result, list) else [result])
 
-    return LoadedDossier(
-        root=root,
-        locale=explicit_locale,
-        tables=tuple(tables),
-        warnings=tuple(warnings),
-    )
+    return LoadedDossier(root=root, tables=tuple(tables), warnings=tuple(warnings))

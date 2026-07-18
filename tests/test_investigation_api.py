@@ -76,36 +76,6 @@ async def test_upload_zip_happy_path(client: AsyncClient) -> None:
     assert body["engagement"]["name"]
 
 
-async def test_upload_control_allowlist_is_visible(client: AsyncClient) -> None:
-    response = await client.post(
-        "/engagements/upload",
-        files={"file": ("dossier.zip", _minimal_dossier_zip(), "application/zip")},
-        data={"control_ids": "split_payment"},
-    )
-    assert response.status_code == 200, response.text
-    controls = response.json()["engagement"]["controls"]
-    assert controls["selected"] == ["split_payment"]
-    assert controls["executed"] == ["split_payment"]
-    assert controls["failed"] == []
-    assert set(controls["skipped"]) == {
-        "vendor_sod",
-        "capitalisation",
-        "cutoff",
-        "anomaly_discovery",
-    }
-    assert "control skipped by explicit allowlist: anomaly_discovery" in controls["warnings"]
-
-
-async def test_upload_rejects_unknown_control_id(client: AsyncClient) -> None:
-    response = await client.post(
-        "/engagements/upload",
-        files={"file": ("dossier.zip", _minimal_dossier_zip(), "application/zip")},
-        data={"control_ids": "split_payment,not_a_control"},
-    )
-    assert response.status_code == 400
-    assert response.json()["detail"] == "unknown control ID(s): not_a_control"
-
-
 _INVOICES_CSV = (
     "invoice_id,vendor_id,amount,date\n"
     "INV-1,VEND-1,100.00,2024-01-05\n"
@@ -176,10 +146,10 @@ async def test_uploads_are_isolated_and_each_source_is_parsed_once(
     calls = 0
     original = dossier_module.load_dossier
 
-    def counted(path: Path, **kwargs):
+    def counted(path: Path):
         nonlocal calls
         calls += 1
-        return original(path, **kwargs)
+        return original(path)
 
     monkeypatch.setattr(dossier_module, "load_dossier", counted)
     first = await client.post(
@@ -335,15 +305,8 @@ async def test_sample_dossier_compiles_and_runs(
     upload = await client.post(
         "/engagements/upload",
         files={"file": ("sample.zip", buf.getvalue(), "application/zip")},
-        data={"control_ids": "split_payment"},
     )
     assert upload.status_code == 200, upload.text
-    controls = upload.json()["engagement"]["controls"]
-    assert controls["selected"] == ["split_payment"]
-    assert controls["executed"] == ["split_payment"]
-    assert controls["failed"] == []
-    assert "anomaly_discovery" in controls["skipped"]
-    assert any("anomaly_discovery" in warning for warning in controls["warnings"])
     engagement_id = upload.json()["engagement_id"]
 
     created = await client.post(

@@ -35,10 +35,10 @@ def test_sources_are_parsed_once(monkeypatch, tmp_path: Path) -> None:
     calls = 0
     original = dossier_module.load_dossier
 
-    def counted(path: Path, **kwargs):
+    def counted(path: Path):
         nonlocal calls
         calls += 1
-        return original(path, **kwargs)
+        return original(path)
 
     monkeypatch.setattr(dossier_module, "load_dossier", counted)
     CompilerService().compile(CompileRequest(dossier=_dossier(tmp_path)))

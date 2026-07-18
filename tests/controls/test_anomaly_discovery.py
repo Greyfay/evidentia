@@ -16,7 +16,6 @@ import pytest
 
 from audit_compiler.admission import admit
 from audit_compiler.controls import AnomalyDiscoveryControl, AnomalyParameters, ControlContext
-from audit_compiler.ir.roles import using_locale
 from audit_compiler.models import EvidenceRef, SourceType
 
 # --- Synthetic in-memory dossier -------------------------------------------------------
@@ -68,8 +67,7 @@ def ledger(rows: list[dict[str, str]], *, name: str = "ledger") -> FakeTable:
 def run(rows, *, params=None, name="ledger"):
     dossier = FakeDossier(tables=(ledger(rows, name=name),))
     ctx = ControlContext(dossier=dossier, params=params or {})
-    with using_locale("en"):
-        return AnomalyDiscoveryControl().run(ctx)
+    return AnomalyDiscoveryControl().run(ctx)
 
 
 def by_subject(findings):

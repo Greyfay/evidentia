@@ -19,28 +19,18 @@ class AgentContext:
     dossier: LoadedDossier
     registry: EvidenceRegistry = field(default_factory=EvidenceRegistry)
     params: dict = field(default_factory=dict)
-    control_ids: tuple[str, ...] | None = None
 
     @classmethod
-    def from_dossier_path(
-        cls,
-        path: str | Path,
-        *,
-        params: dict | None = None,
-        control_ids: tuple[str, ...] | None = None,
-    ) -> AgentContext:
+    def from_dossier_path(cls, path: str | Path, *, params: dict | None = None) -> AgentContext:
         from audit_compiler.compiler import CompileRequest, CompilerService
 
         root = Path(path).expanduser().resolve()
-        bundle = CompilerService().compile(
-            CompileRequest(dossier=root, params=params or {}, control_ids=control_ids)
-        )
+        bundle = CompilerService().compile(CompileRequest(dossier=root, params=params or {}))
         return cls.from_compiled_run(
             root / ".admissible" / "audit.duckdb",
             bundle.engagement.engagement_id,
             bundle.engagement.run_id,
             params=params,
-            control_ids=control_ids,
         )
 
     @classmethod
@@ -51,12 +41,11 @@ class AgentContext:
         run_id: str,
         *,
         params: dict | None = None,
-        control_ids: tuple[str, ...] | None = None,
     ) -> AgentContext:
         from audit_compiler.duckdb_store import DuckDBAuditStore
 
         dossier = DuckDBAuditStore(database).load_dossier(engagement_id, run_id)
-        return cls(dossier=dossier, params=params or {}, control_ids=control_ids)
+        return cls(dossier=dossier, params=params or {})
 
     def cite(self, ref: EvidenceRef) -> str:
         """Record an evidence pointer and return its citeable id."""

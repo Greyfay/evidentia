@@ -20,18 +20,16 @@ function SectionLabel({ children, id }: { children: React.ReactNode; id?: string
 
 export default function CasePage() {
   const params = useParams<{ id: string }>();
-  const { getCase, state } = useCasesData();
+  const { getCase, loading } = useCasesData();
   const c = getCase(params.id);
 
   if (!c) {
     return (
       <main className="mx-auto w-full max-w-4xl px-5 sm:px-8 py-14 text-sm">
         <p style={{ color: "var(--text-2)" }}>
-          {state === "uploading" || state === "compiling"
-            ? "Loading engagement…"
-            : "No case with this id in the compiled engagement."}
+          {loading ? "Loading engagement…" : "No case with this id in the compiled engagement."}
         </p>
-        {state !== "uploading" && state !== "compiling" && (
+        {!loading && (
           <Link href="/" className="inline-block mt-4 text-xs" style={{ color: "var(--amber)" }}>
             ← Back to case board
           </Link>

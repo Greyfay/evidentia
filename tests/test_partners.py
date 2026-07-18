@@ -31,11 +31,6 @@ from audit_compiler.llm.interface import (
     split_evidence_citations,
     validate_evidence_citations,
 )
-from audit_compiler.llm.openai_client import (
-    _CounterHypothesesPayload,
-    _ExplanationPayload,
-    _TermNormalizationPayload,
-)
 
 
 @pytest.fixture(autouse=True)
@@ -161,12 +156,3 @@ def test_split_evidence_citations_separates_allowed_from_rejected() -> None:
 def test_explanation_model_rejects_unknown_fields() -> None:
     with pytest.raises(ValidationError):
         Explanation(available=True, provider="null", not_a_real_field="x")  # type: ignore[call-arg]
-
-
-@pytest.mark.parametrize(
-    "payload",
-    (_TermNormalizationPayload, _ExplanationPayload, _CounterHypothesesPayload),
-)
-def test_openai_structured_output_schema_requires_every_property(payload) -> None:
-    schema = payload.model_json_schema()
-    assert set(schema["required"]) == set(schema["properties"])

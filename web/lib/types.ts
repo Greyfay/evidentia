@@ -108,7 +108,7 @@ export interface Case {
   counter_tests: CounterTest[];
   uncertainty: string | null;
   recommended_action: string;
-  reviewer_decision: { decision: string; note: string | null } | null;
+  reviewer_decision: string | null;
 }
 
 export interface CasesDocument {
