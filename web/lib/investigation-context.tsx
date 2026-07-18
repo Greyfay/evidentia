@@ -117,7 +117,7 @@ export function InvestigationProvider({ children }: { children: React.ReactNode 
     setError(null);
     try {
       const result = await api.uploadEngagement(file);
-      setEngagement(result.engagement);
+      setEngagement({ ...result.engagement, engagement_id: result.engagement_id });
       setUsingFallback(false);
     } catch {
       setEngagement({ ...fixture.engagement, name: `${file.name} (demo fixture — API unreachable)` });
