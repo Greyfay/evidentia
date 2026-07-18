@@ -48,7 +48,8 @@ _LOGGER = logging.getLogger(__name__)
 
 
 class CompileRequest(BaseModel):
-    dossier_path: str
+    dossier_path: str | None = None
+    investigation_id: str | None = None
     name: str | None = None
     control_ids: tuple[str, ...] | None = None
 
@@ -83,9 +84,21 @@ def health() -> dict:
 
 @app.post("/engagements/compile")
 def compile_endpoint(request: CompileRequest) -> dict:
-    path = Path(request.dossier_path).expanduser()
+    if request.investigation_id:
+        stored = get_store().get_engagement(request.investigation_id)
+        if stored is None:
+            raise HTTPException(404, "unknown investigation_id; upload it first")
+        selected = tuple(stored.bundle["engagement"]["controls"]["selected"])
+        if request.control_ids is not None and request.control_ids != selected:
+            raise HTTPException(400, "control_ids must match the uploaded control allowlist")
+        _STATE["bundle"] = stored.bundle
+        return _STATE["bundle"]["engagement"]
+    elif request.dossier_path:
+        path = Path(request.dossier_path).expanduser()
+    else:
+        raise HTTPException(400, "dossier_path or investigation_id is required")
     if not path.exists():
-        raise HTTPException(400, f"dossier path does not exist: {request.dossier_path}")
+        raise HTTPException(400, "uploaded dossier is no longer available")
     try:
         _STATE["bundle"] = _compile(
             path, name=request.name, control_ids=request.control_ids
@@ -248,7 +261,11 @@ async def upload_engagement(request: Request) -> dict:
             control_ids=tuple(bundle["engagement"]["controls"]["selected"]),
         )
         engagement_id = get_store().add_engagement(None, ctx, bundle)
-        return {"engagement_id": engagement_id, "engagement": bundle["engagement"]}
+        return {
+            "engagement_id": engagement_id,
+            "investigation_id": engagement_id,
+            "engagement": bundle["engagement"],
+        }
     except BaseException:
         shutil.rmtree(persist_dir, ignore_errors=True)
         raise
