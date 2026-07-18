@@ -30,11 +30,10 @@ DEFAULT_TIMEOUTS = {
     "duckdb_persistence": 10.0,
     "control": 8.0,
     "admission_and_case_building": 5.0,
-    "API upload lifecycle": 30.0,
-    "API list/get case": 5.0,
-    "evidence resolution": 5.0,
-    "auditor review action": 5.0,
+    "api_lifecycle": 30.0,
 }
+
+API_SUBSTEP_TIMEOUT_SECONDS = 5.0
 
 
 def _json_default(value: object) -> str:
@@ -309,94 +308,192 @@ def _zip_dossier(path: Path) -> bytes:
     return buffer.getvalue()
 
 
-async def _api_upload(ctx: dict[str, Any], progress: Callable[..., Any]) -> dict[str, Any]:
-    from httpx import ASGITransport, AsyncClient
+class ApiSubstepFailure(RuntimeError):
+    """An HTTP lifecycle substep failed, with its complete response diagnostics."""
 
-    import audit_compiler.api.app as api_module
-
-    api_module._STATE["bundle"] = None
-    data: dict[str, str] = {}
-    if ctx["controls"]:
-        data["control_ids"] = ",".join(ctx["controls"])
-    async with AsyncClient(
-        transport=ASGITransport(app=api_module.app), base_url="http://probe"
-    ) as client:
-        response = await client.post(
-            "/engagements/upload",
-            files={"file": ("dossier.zip", _zip_dossier(Path(ctx["dossier"])), "application/zip")},
-            data=data,
+    def __init__(
+        self, endpoint: str, status_code: int | None, response_body: str, elapsed: float
+    ) -> None:
+        self.endpoint = endpoint
+        self.status_code = status_code
+        self.response_body = response_body
+        self.elapsed_seconds = elapsed
+        super().__init__(
+            f"endpoint={endpoint} status_code={status_code} "
+            f"response_body={response_body!r} elapsed_seconds={elapsed:.6f}"
         )
-    progress("API_UPLOAD_RESPONSE", status_code=response.status_code)
-    response.raise_for_status()
-    Path(ctx["api_bundle"]).write_text(json.dumps(api_module._STATE["bundle"]), encoding="utf-8")
-    return {"api_upload_status": response.status_code}
 
 
-def api_upload(ctx: dict[str, Any], progress: Callable[..., Any]) -> dict[str, Any]:
-    return asyncio.run(_api_upload(ctx, progress))
+async def _request(client: Any, method: str, endpoint: str, **kwargs: Any) -> Any:
+    started = time.monotonic()
+    try:
+        response = await asyncio.wait_for(
+            client.request(method, endpoint, **kwargs),
+            timeout=API_SUBSTEP_TIMEOUT_SECONDS,
+        )
+    except TimeoutError as exc:
+        elapsed = time.monotonic() - started
+        raise ApiSubstepFailure(endpoint, None, "<request timed out>", elapsed) from exc
+    except BaseException as exc:
+        elapsed = time.monotonic() - started
+        raise ApiSubstepFailure(endpoint, None, str(exc), elapsed) from exc
+    elapsed = time.monotonic() - started
+    if response.is_error:
+        raise ApiSubstepFailure(endpoint, response.status_code, response.text, elapsed)
+    response.extensions["probe_elapsed_seconds"] = elapsed
+    return response
 
 
-async def _api_request_stage(
-    ctx: dict[str, Any], progress: Callable[..., Any], kind: str
+def _payload(response: Any, endpoint: str) -> dict[str, Any]:
+    try:
+        payload = response.json()
+        if not isinstance(payload, dict):
+            raise TypeError("response payload is not an object")
+        return payload
+    except BaseException as exc:
+        raise ApiSubstepFailure(
+            endpoint,
+            response.status_code,
+            response.text,
+            response.extensions.get("probe_elapsed_seconds", 0.0),
+        ) from exc
+
+
+def _case_evidence(case: dict[str, Any]) -> list[dict[str, Any]]:
+    evidence = [item for step in case.get("evidence_chain", []) for item in step["evidence"]]
+    evidence.extend(case.get("calculation", {}).get("evidence", []))
+    evidence.extend(
+        item for counter_test in case.get("counter_tests", []) for item in counter_test["evidence"]
+    )
+    return evidence
+
+
+async def _run_api_lifecycle(
+    ctx: dict[str, Any], progress: Callable[..., Any], app: Any
 ) -> dict[str, Any]:
     from httpx import ASGITransport, AsyncClient
 
-    import audit_compiler.api.app as api_module
-
-    api_module._STATE["bundle"] = json.loads(Path(ctx["api_bundle"]).read_text(encoding="utf-8"))
-    cases = api_module._STATE["bundle"]["cases"]
     async with AsyncClient(
-        transport=ASGITransport(app=api_module.app), base_url="http://probe"
+        transport=ASGITransport(app=app), base_url="http://probe"
     ) as client:
-        if kind == "list":
-            listed = await client.get("/cases")
-            listed.raise_for_status()
-            status = listed.status_code
-            if cases:
-                opened = await client.get(f"/cases/{cases[0]['case_id']}")
-                opened.raise_for_status()
-                status = opened.status_code
-            progress("API_LIST_GET_COMPLETE", status_code=status, case_count=len(cases))
-            return {"api_list_get_status": status}
+        progress("API_UPLOAD_START", endpoint="/engagements/upload")
+        upload = await _request(
+            client,
+            "POST",
+            "/engagements/upload",
+            files={
+                "file": (
+                    "dossier.zip",
+                    _zip_dossier(Path(ctx["dossier"])),
+                    "application/zip",
+                )
+            },
+            data={"control_ids": ",".join(ctx["controls"])} if ctx["controls"] else {},
+        )
+        upload_body = _payload(upload, "/engagements/upload")
+        try:
+            engagement_id = upload_body["engagement_id"]
+        except KeyError as exc:
+            raise ApiSubstepFailure(
+                "/engagements/upload", upload.status_code, upload.text,
+                upload.extensions["probe_elapsed_seconds"],
+            ) from exc
+        created = await _request(
+            client,
+            "POST",
+            "/investigations",
+            json={"engagement_id": engagement_id, "objective": "deadline probe"},
+        )
+        created_body = _payload(created, "/investigations")
+        try:
+            investigation_id = created_body["investigation_id"]
+        except KeyError as exc:
+            raise ApiSubstepFailure(
+                "/investigations", created.status_code, created.text,
+                created.extensions["probe_elapsed_seconds"],
+            ) from exc
+        progress(
+            "API_UPLOAD_END",
+            endpoint="/engagements/upload",
+            status_code=upload.status_code,
+            investigation_id=investigation_id,
+        )
+
+        progress("API_LIST_START", endpoint="/cases")
+        listed = await _request(client, "GET", "/cases")
+        listed_body = _payload(listed, "/cases")
+        try:
+            cases = listed_body["cases"]
+        except KeyError as exc:
+            raise ApiSubstepFailure(
+                "/cases", listed.status_code, listed.text,
+                listed.extensions["probe_elapsed_seconds"],
+            ) from exc
         if not cases:
-            progress("API_NO_CASES", operation=kind)
-            return {f"{kind}_status": "not_applicable", "evidence_resolution_count": 0}
-        case = cases[0]
-        if kind == "evidence":
-            evidence = [e for step in case["evidence_chain"] for e in step["evidence"]]
-            evidence += case["calculation"]["evidence"]
-            if not evidence:
-                raise RuntimeError("first case has no resolvable evidence")
-            response = await client.get(f"/evidence/{evidence[0]['evidence_id']}")
-            response.raise_for_status()
-            progress(
-                "EVIDENCE_RESOLVED",
-                status_code=response.status_code,
-                evidence_id=evidence[0]["evidence_id"],
+            raise ApiSubstepFailure(
+                "/cases", listed.status_code, listed.text,
+                listed.extensions["probe_elapsed_seconds"],
             )
-            return {
-                "evidence_resolution_status": response.status_code,
-                "evidence_resolution_count": 1,
-            }
-        response = await client.post(
-            f"/cases/{case['case_id']}/review",
+        case_id = cases[0]["case_id"]
+        progress(
+            "API_LIST_END", endpoint="/cases", status_code=listed.status_code,
+            case_count=len(cases), case_id=case_id,
+        )
+
+        case_endpoint = f"/cases/{case_id}"
+        progress("API_GET_CASE_START", endpoint=case_endpoint, case_id=case_id)
+        opened = await _request(client, "GET", case_endpoint)
+        case = _payload(opened, case_endpoint)
+        progress(
+            "API_GET_CASE_END", endpoint=case_endpoint, status_code=opened.status_code,
+            case_id=case_id,
+        )
+
+        evidence = _case_evidence(case)
+        if not evidence:
+            raise ApiSubstepFailure(
+                case_endpoint, opened.status_code, opened.text,
+                opened.extensions["probe_elapsed_seconds"],
+            )
+        evidence_id = evidence[0]["evidence_id"]
+        evidence_endpoint = f"/evidence/{evidence_id}"
+        progress("API_EVIDENCE_START", endpoint=evidence_endpoint, evidence_id=evidence_id)
+        resolved = await _request(client, "GET", evidence_endpoint)
+        progress(
+            "API_EVIDENCE_END", endpoint=evidence_endpoint, status_code=resolved.status_code,
+            evidence_id=evidence_id,
+        )
+
+        review_endpoint = f"/cases/{case_id}/review"
+        progress("API_REVIEW_START", endpoint=review_endpoint, case_id=case_id)
+        reviewed = await _request(
+            client, "POST", review_endpoint,
             json={"decision": "escalate", "note": "deadline probe"},
         )
-        response.raise_for_status()
-        progress("REVIEW_RECORDED", status_code=response.status_code, case_id=case["case_id"])
-        return {"review_status": response.status_code}
+        progress(
+            "API_REVIEW_END", endpoint=review_endpoint, status_code=reviewed.status_code,
+            case_id=case_id,
+        )
+        return {
+            "api_upload_status": upload.status_code,
+            "api_list_status": listed.status_code,
+            "api_get_case_status": opened.status_code,
+            "api_evidence_status": resolved.status_code,
+            "evidence_resolution_count": 1,
+            "review_status": reviewed.status_code,
+            "investigation_id": investigation_id,
+            "case_id": case_id,
+        }
 
 
-def api_list_get(ctx: dict[str, Any], progress: Callable[..., Any]) -> dict[str, Any]:
-    return asyncio.run(_api_request_stage(ctx, progress, "list"))
+async def _api_lifecycle(ctx: dict[str, Any], progress: Callable[..., Any]) -> dict[str, Any]:
+    import audit_compiler.api.app as api_module
+
+    return await _run_api_lifecycle(ctx, progress, api_module.app)
 
 
-def evidence_resolution(ctx: dict[str, Any], progress: Callable[..., Any]) -> dict[str, Any]:
-    return asyncio.run(_api_request_stage(ctx, progress, "evidence"))
-
-
-def review_action(ctx: dict[str, Any], progress: Callable[..., Any]) -> dict[str, Any]:
-    return asyncio.run(_api_request_stage(ctx, progress, "review"))
+def api_lifecycle(ctx: dict[str, Any], progress: Callable[..., Any]) -> dict[str, Any]:
+    return asyncio.run(_api_lifecycle(ctx, progress))
 
 
 def parse_timeout_overrides(values: list[str]) -> dict[str, float]:
@@ -471,7 +568,6 @@ def main(argv: list[str] | None = None) -> int:
             "parsed_artifact": str(root / "parsed.pickle"),
             "database": str(root / "probe.duckdb"),
             "cases_artifact": str(root / "cases.json"),
-            "api_bundle": str(root / "api-bundle.json"),
             "verbose": args.verbose,
         }
         stages = [
@@ -509,25 +605,10 @@ def main(argv: list[str] | None = None) -> int:
                 admission_cases,
             ),
             Stage(
-                "API upload lifecycle",
-                "API upload lifecycle",
-                budgets["API upload lifecycle"],
-                api_upload,
-            ),
-            Stage(
-                "API list/get case", "API list/get case", budgets["API list/get case"], api_list_get
-            ),
-            Stage(
-                "evidence resolution",
-                "evidence resolution",
-                budgets["evidence resolution"],
-                evidence_resolution,
-            ),
-            Stage(
-                "auditor review action",
-                "auditor review action",
-                budgets["auditor review action"],
-                review_action,
+                "api_lifecycle",
+                "api_lifecycle",
+                budgets["api_lifecycle"],
+                api_lifecycle,
             ),
         ]
         try:
