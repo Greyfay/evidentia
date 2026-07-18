@@ -25,6 +25,10 @@ def build_parser() -> argparse.ArgumentParser:
     compile_command.add_argument("dossier", type=Path, help="directory containing the dossier")
     compile_command.add_argument("--name", type=str, help="engagement display name")
     compile_command.add_argument(
+        "--locale", choices=("de", "en"), default="de"
+    )
+    compile_command.add_argument("--database", type=Path)
+    compile_command.add_argument(
         "--cases-out", type=Path, help="write the cases.json replay bundle to this path"
     )
     compile_command.add_argument("--output", type=Path, help="alias for --cases-out")
@@ -34,6 +38,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     store.add_argument("dossier", type=Path, help="directory containing the dossier")
     store.add_argument("--database", type=Path, help="override the DuckDB output path")
+    store.add_argument("--locale", choices=("de", "en"), default="de")
     store.add_argument("--output", type=Path, help="write the JSON compilation report here")
 
     serve = subparsers.add_parser("serve", help="serve the FastAPI review API")
@@ -55,7 +60,14 @@ def main(argv: list[str] | None = None) -> None:
         serialized = manifest.model_dump_json(indent=2) + "\n"
         _emit(serialized, args.output)
     elif args.command == "compile":
-        bundle = CompilerService().compile(CompileRequest(dossier=args.dossier, name=args.name))
+        bundle = CompilerService().compile(
+            CompileRequest(
+                dossier=args.dossier,
+                name=args.name,
+                database=args.database,
+                locale=args.locale,
+            )
+        )
         bundle = bundle.model_dump(mode="json")
         serialized = json.dumps(bundle, indent=2, ensure_ascii=False) + "\n"
         _emit(serialized, args.cases_out or args.output)
@@ -67,7 +79,11 @@ def main(argv: list[str] | None = None) -> None:
         )
     elif args.command == "store":
         report = CompilerService().compile_report(
-            CompileRequest(dossier=args.dossier, database=args.database)
+            CompileRequest(
+                dossier=args.dossier,
+                database=args.database,
+                locale=args.locale,
+            )
         )
         _emit(report.model_dump_json(indent=2) + "\n", args.output)
         if report.errors:

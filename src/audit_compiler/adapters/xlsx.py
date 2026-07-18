@@ -21,13 +21,19 @@ from pydantic import Field
 
 from audit_compiler.inventory import SourceFile, infer_file_type, sha256_file
 from audit_compiler.models import EvidenceRef, ImmutableModel, SourceType
-from audit_compiler.normalization import normalize_identifier, parse_date, parse_decimal
+from audit_compiler.normalization import Locale, normalize_identifier, parse_date, parse_decimal
 
 _GERMAN_DECIMAL = re.compile(
     r"^\s*(?:EUR|€)?\s*\(?[+-]?(?:\d{1,3}(?:\.\d{3})+|\d+),\d+\)?\s*(?:EUR|€)?\s*$",
     re.IGNORECASE,
 )
 _GERMAN_DATE = re.compile(r"^\s*\d{1,2}\.\d{1,2}\.\d{2,4}\s*$")
+_ENGLISH_DECIMAL = re.compile(
+    r"^\s*(?:USD|GBP|\$|\u00a3)?\s*\(?[+-]?(?:\d{1,3}(?:,\d{3})+|\d+)\.\d+\)?"
+    r"\s*(?:USD|GBP|\$|\u00a3)?\s*$",
+    re.IGNORECASE,
+)
+_ENGLISH_DATE = re.compile(r"^\s*\d{1,2}/\d{1,2}/\d{2,4}\s*$")
 
 Cells = Annotated[tuple["XlsxCell", ...], Field(min_length=1)]
 
@@ -97,11 +103,13 @@ def _raw_string(value: Any) -> str:
     return str(value)
 
 
-def _normalize_value(value: Any, raw_value: str) -> tuple[str | None, str | None]:
+def _normalize_value(
+    value: Any, raw_value: str, *, locale: Locale
+) -> tuple[str | None, str | None]:
     if value is None:
         return None, None
     if isinstance(value, datetime | date):
-        return parse_date(value, locale="de").isoformat(), "date"
+        return parse_date(value, locale=locale).isoformat(), "date"
     if isinstance(value, bool):
         return "true" if value else "false", "boolean"
     if isinstance(value, int):
@@ -113,10 +121,12 @@ def _normalize_value(value: Any, raw_value: str) -> tuple[str | None, str | None
     if isinstance(value, str):
         if value == "":
             return None, None
-        if _GERMAN_DATE.fullmatch(value):
-            return parse_date(value, locale="de").isoformat(), "date"
-        if _GERMAN_DECIMAL.fullmatch(value):
-            return format(parse_decimal(value, locale="de"), "f"), "decimal"
+        date_pattern = _GERMAN_DATE if locale == "de" else _ENGLISH_DATE
+        decimal_pattern = _GERMAN_DECIMAL if locale == "de" else _ENGLISH_DECIMAL
+        if date_pattern.fullmatch(value):
+            return parse_date(value, locale=locale).isoformat(), "date"
+        if decimal_pattern.fullmatch(value):
+            return format(parse_decimal(value, locale=locale), "f"), "decimal"
         return normalize_identifier(value, uppercase=False), "identifier"
     return raw_value, "string"
 
@@ -135,7 +145,9 @@ def _formula_cells(path: Path) -> dict[tuple[str, str], str]:
                 relationship.attrib["Id"]: relationship.attrib["Target"]
                 for relationship in relationships
             }
-            relationship_attribute = "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
+            relationship_attribute = (
+                "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id"
+            )
             for sheet in workbook.iter(
                 "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}sheet"
             ):
@@ -222,7 +234,9 @@ def _detect_header(
     return None, (), tuple(warnings)
 
 
-def parse_xlsx_workbook(path: Path, *, dossier_root: Path) -> XlsxWorkbook:
+def parse_xlsx_workbook(
+    path: Path, *, dossier_root: Path, locale: Locale = "de"
+) -> XlsxWorkbook:
     """Parse all sheets and all cells in their reported dimensions."""
 
     path = path.expanduser().resolve()
@@ -256,7 +270,9 @@ def parse_xlsx_workbook(path: Path, *, dossier_root: Path) -> XlsxWorkbook:
                     coordinate = f"{get_column_letter(column_number)}{row_number}"
                     value = cell.value
                     raw_value = _raw_string(value)
-                    normalized_value, normalization_kind = _normalize_value(value, raw_value)
+                    normalized_value, normalization_kind = _normalize_value(
+                        value, raw_value, locale=locale
+                    )
                     formula = formulas.get((sheet.title, coordinate))
                     extraction_method = (
                         "openpyxl.read_only.data_only.formula_cache"
