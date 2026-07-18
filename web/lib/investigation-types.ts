@@ -38,7 +38,8 @@ export interface Calculation {
 
 export interface CompletedAction {
   tool_name: string;
-  structured_result: string;
+  // Backend returns the raw dict a tool produced; shape varies per tool.
+  structured_result: Record<string, unknown> | string;
   evidence_ids: string[];
   calculation: Calculation | null;
   errors: string[];
