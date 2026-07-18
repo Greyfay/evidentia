@@ -148,6 +148,23 @@ async def test_upload_zip_path_traversal_rejected(
     assert not Path("evil.txt").exists()
 
 
+async def test_upload_rejects_archive_that_expands_beyond_safe_limit(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(app_module, "_MAX_EXTRACTED_BYTES", 10)
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("ledger.csv", "amount\n1234567890\n")
+
+    response = await client.post(
+        "/engagements/upload",
+        files={"file": ("large.zip", buf.getvalue(), "application/zip")},
+    )
+
+    assert response.status_code == 413
+    assert "archive expands to" in response.json()["detail"]
+
+
 async def test_unknown_investigation_id_404(client: AsyncClient) -> None:
     response = await client.get("/investigations/does-not-exist")
     assert response.status_code == 404

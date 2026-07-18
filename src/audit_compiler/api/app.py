@@ -41,6 +41,8 @@ app.include_router(investigations_router)
 
 _STATE: dict[str, dict] = {"bundle": None}
 _MAX_UPLOAD_BYTES = 200 * 1024 * 1024  # 200 MiB: generous for a dossier, bounded against abuse
+_MAX_EXTRACTED_BYTES = 256 * 1024 * 1024
+_MAX_ARCHIVE_MEMBERS = 10_000
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -127,8 +129,23 @@ def _safe_extract(zf: zipfile.ZipFile, target_dir: Path) -> None:
     outside the target dir after extraction even though its own path looks safe).
     """
 
+    members = zf.infolist()
+    if len(members) > _MAX_ARCHIVE_MEMBERS:
+        raise HTTPException(
+            413,
+            f"archive contains too many entries; maximum is {_MAX_ARCHIVE_MEMBERS}",
+        )
+    extracted_bytes = sum(member.file_size for member in members if not member.is_dir())
+    if extracted_bytes > _MAX_EXTRACTED_BYTES:
+        actual_mib = extracted_bytes / (1024 * 1024)
+        limit_mib = _MAX_EXTRACTED_BYTES // (1024 * 1024)
+        raise HTTPException(
+            413,
+            f"archive expands to {actual_mib:.1f} MiB; current safe limit is {limit_mib} MiB",
+        )
+
     target_dir = target_dir.resolve()
-    for member in zf.infolist():
+    for member in members:
         name = member.filename
         if not name or name.startswith("/") or name.startswith("\\"):
             raise HTTPException(400, f"unsafe path in zip entry: {name!r}")
