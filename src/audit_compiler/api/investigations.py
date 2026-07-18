@@ -9,6 +9,7 @@ raising. The heavy lifting -- hypothesis generation, tool selection, execution -
 
 from __future__ import annotations
 
+import os
 import time
 
 from fastapi import APIRouter, HTTPException
@@ -63,6 +64,39 @@ def _get_hypothesis(inv: Investigation, hypothesis_id: str):
 
 def _dump(inv: Investigation) -> dict:
     return inv.model_dump(mode="json")
+
+
+@router.get("/agent-status")
+def agent_status() -> dict:
+    """Report which live capabilities back the agent right now, so the UI can show
+    whether it is running with OpenAI planning, Cognee memory, or in deterministic
+    fallback. Never performs a network call; reflects configured capability only."""
+
+    openai_active = bool(os.environ.get("OPENAI_API_KEY"))
+    cognee_active = False
+    try:
+        from audit_compiler.agent.cognee_memory import get_memory
+
+        cognee_active = bool(get_memory().available)
+    except Exception:  # noqa: BLE001 - status must never raise
+        cognee_active = False
+
+    if openai_active and cognee_active:
+        mode = "live"
+    elif openai_active or cognee_active:
+        mode = "partial"
+    else:
+        mode = "fallback"
+
+    return {
+        "mode": mode,
+        "planner": get_planner().name,
+        "openai": {
+            "active": openai_active,
+            "model": os.environ.get("OPENAI_MODEL", "gpt-4o-mini") if openai_active else None,
+        },
+        "cognee": {"active": cognee_active},
+    }
 
 
 @router.post("/investigations")
