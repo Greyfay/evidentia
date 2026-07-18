@@ -9,6 +9,13 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+try:  # load local secrets before reading env; harmless if python-dotenv/.env absent
+    from dotenv import load_dotenv
+
+    load_dotenv()
+except ImportError:
+    pass
+
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel

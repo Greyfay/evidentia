@@ -44,6 +44,12 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> None:
+    try:  # load local secrets (OPENAI/COGNEE keys) if present; harmless if absent
+        from dotenv import load_dotenv
+
+        load_dotenv()
+    except ImportError:
+        pass
     args = build_parser().parse_args(argv)
     if args.command == "inventory":
         manifest = inventory_dossier(args.dossier)

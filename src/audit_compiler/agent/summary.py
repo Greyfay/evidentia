@@ -39,7 +39,7 @@ def build_entity_catalog(ctx: AgentContext) -> EntityCatalog:
             for col in (user_col, approver_col):
                 if col and row.get(col) and str(row[col]).strip():
                     catalog.users.add(row[col].strip())
-    # Users tend to look like MV-U05; keep entries that are short codes, drop long free text.
+    # User identifiers are short codes; drop long free-text values captured by the synonyms.
     catalog.users = {u for u in catalog.users if len(u) <= 12}
     return catalog
 
