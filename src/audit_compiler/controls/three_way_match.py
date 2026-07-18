@@ -6,7 +6,7 @@ Adapters may later translate canonical events into these local immutable records
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, fields, replace
 from datetime import date
 from decimal import Decimal
 from enum import StrEnum
@@ -123,7 +123,7 @@ class PurchaseInvoiceRecord:
     net_amount: Decimal
     vat_amount: Decimal
     gross_amount: Decimal
-    classification: PurchaseClassification
+    classification: PurchaseClassification | None
     evidence_refs: tuple[EvidenceRef, ...]
     purchase_order_reference: str | None = None
     goods_receipt_reference: str | None = None
@@ -137,7 +137,9 @@ class PurchaseInvoiceRecord:
             raise TypeError("invoice_date must be a date")
         for name in ("net_amount", "vat_amount", "gross_amount", "quantity"):
             _money(name, getattr(self, name))
-        if not isinstance(self.classification, PurchaseClassification):
+        if self.classification is not None and not isinstance(
+            self.classification, PurchaseClassification
+        ):
             raise TypeError("classification must be PurchaseClassification")
         _refs(self.evidence_refs)
 
@@ -274,7 +276,51 @@ def _dedupe(records: tuple[T, ...]) -> tuple[T, ...]:
         if prior is not None and prior != record:
             raise ValueError(f"conflicting duplicate source record: {record.record_id}")  # type: ignore[attr-defined]
         by_source[key] = record
-    return tuple(sorted(by_source.values(), key=lambda item: (type(item).__name__, item.record_id)))  # type: ignore[attr-defined]
+
+    deduplicated: dict[tuple[object, ...], T] = {}
+    passthrough: list[T] = []
+    for record in sorted(
+        by_source.values(),
+        key=lambda item: (type(item).__name__, item.record_id),  # type: ignore[attr-defined]
+    ):
+        business_key = _business_key(record)
+        if business_key is None:
+            passthrough.append(record)
+            continue
+        prior = deduplicated.get(business_key)
+        if prior is None:
+            deduplicated[business_key] = record
+            continue
+        if _semantic_key(prior) == _semantic_key(record):
+            chosen = min((prior, record), key=lambda item: item.record_id)  # type: ignore[attr-defined]
+            merged = _merge_refs(prior.evidence_refs, record.evidence_refs)  # type: ignore[attr-defined]
+            deduplicated[business_key] = replace(chosen, evidence_refs=merged)
+        else:
+            # Repeated business references can be legitimate document lines. Only
+            # semantically identical representations are collapsed.
+            passthrough.append(record)
+    result = [*deduplicated.values(), *passthrough]
+    return tuple(sorted(result, key=lambda item: (type(item).__name__, item.record_id)))  # type: ignore[attr-defined]
+
+
+def _business_key(record: object) -> tuple[object, ...] | None:
+    if isinstance(record, PurchaseInvoiceRecord):
+        return (type(record), _norm(record.vendor_id), _norm(record.invoice_reference))
+    if isinstance(record, PurchaseOrderRecord):
+        return (type(record), _norm(record.vendor_id), _norm(record.order_reference))
+    if isinstance(record, GoodsReceiptRecord):
+        return (type(record), _norm(record.vendor_id), _norm(record.receipt_reference))
+    if isinstance(record, PurchaseAdjustmentRecord):
+        return (type(record), _semantic_key(record))
+    return None
+
+
+def _semantic_key(record: object) -> tuple[object, ...]:
+    return tuple(
+        getattr(record, item.name)
+        for item in fields(record)
+        if item.name not in {"record_id", "evidence_refs"}
+    )
 
 
 def _merge_refs(*groups: tuple[EvidenceRef, ...]) -> tuple[EvidenceRef, ...]:
@@ -348,16 +394,24 @@ class ThreeWayMatchControl:
             )
             for item in orders
         }
+        adjustment_available = {
+            item.record_id: _Available(
+                item.net_amount, item.vat_amount, item.gross_amount, item.quantity
+            )
+            for item in adjustments
+        }
         duplicate_ids = self._duplicate_invoice_ids(invoices)
         outcomes: list[ThreeWayMatchOutcome] = []
         for invoice in invoices:
             outcome, _consumed = self._evaluate_invoice(
                 invoice,
+                invoices,
                 orders,
                 receipts,
                 adjustments,
                 available,
                 order_available,
+                adjustment_available,
                 duplicate_ids,
                 parameters,
             )
@@ -385,37 +439,47 @@ class ThreeWayMatchControl:
         duplicate_ids: set[str] = set()
         for group in grouped.values():
             if len(group) > 1:
-                duplicate_ids.update(item.record_id for item in group)
+                ordered = sorted(group, key=lambda item: item.record_id)
+                duplicate_ids.update(item.record_id for item in ordered[1:])
         return duplicate_ids
 
     def _evaluate_invoice(
         self,
         invoice: PurchaseInvoiceRecord,
+        invoices: tuple[PurchaseInvoiceRecord, ...],
         orders: tuple[PurchaseOrderRecord, ...],
         receipts: tuple[GoodsReceiptRecord, ...],
         adjustments: tuple[PurchaseAdjustmentRecord, ...],
         available: dict[str, _Available],
         order_available: dict[str, _Available],
+        adjustment_available: dict[str, _Available],
         duplicate_ids: set[str],
         parameters: ThreeWayMatchParameters,
     ) -> tuple[ThreeWayMatchOutcome, set[str]]:
-        linked_adjustments = tuple(
-            item
-            for item in adjustments
-            if _norm(item.vendor_id) == _norm(invoice.vendor_id)
-            and (
-                _norm(item.invoice_reference) == _norm(invoice.invoice_reference)
-                or (
-                    invoice.purchase_order_reference
-                    and _norm(item.purchase_order_reference)
-                    == _norm(invoice.purchase_order_reference)
+        adjustment_candidates = sorted(
+            (
+                item
+                for item in adjustments
+                if _norm(item.vendor_id) == _norm(invoice.vendor_id)
+                and (
+                    _norm(item.invoice_reference) == _norm(invoice.invoice_reference)
+                    or (
+                        invoice.purchase_order_reference
+                        and _norm(item.purchase_order_reference)
+                        == _norm(invoice.purchase_order_reference)
+                    )
+                    or (
+                        invoice.goods_receipt_reference
+                        and _norm(item.goods_receipt_reference)
+                        == _norm(invoice.goods_receipt_reference)
+                    )
                 )
-                or (
-                    invoice.goods_receipt_reference
-                    and _norm(item.goods_receipt_reference)
-                    == _norm(invoice.goods_receipt_reference)
-                )
-            )
+            ),
+            key=lambda item: (
+                0 if _norm(item.invoice_reference) == _norm(invoice.invoice_reference) else 1,
+                item.effective_date,
+                item.record_id,
+            ),
         )
         related_nonaccepted = tuple(
             item
@@ -438,19 +502,43 @@ class ThreeWayMatchControl:
                 )
             )
         )
-        cancelled = invoice.cancelled or any(
-            item.kind in {MatchAdjustmentKind.CANCELLATION, MatchAdjustmentKind.REVERSAL}
-            and item.gross_amount + parameters.amount_tolerance >= invoice.gross_amount
-            for item in linked_adjustments
+        linked_adjustments: list[PurchaseAdjustmentRecord] = []
+        credit_net = credit_vat = credit_gross = ZERO
+        for item in adjustment_candidates:
+            pool = adjustment_available[item.record_id]
+            take_net = min(invoice.net_amount - credit_net, pool.net)
+            take_vat = min(invoice.vat_amount - credit_vat, pool.vat or ZERO)
+            take_gross = min(invoice.gross_amount - credit_gross, pool.gross or ZERO)
+            if take_net == ZERO and take_vat == ZERO and take_gross == ZERO:
+                continue
+            linked_adjustments.append(item)
+            credit_net += take_net
+            credit_vat += take_vat
+            credit_gross += take_gross
+            pool.net -= take_net
+            if pool.vat is not None:
+                pool.vat -= take_vat
+            if pool.gross is not None:
+                pool.gross -= take_gross
+        cancelled = (
+            invoice.cancelled
+            or any(
+                item.kind in {MatchAdjustmentKind.CANCELLATION, MatchAdjustmentKind.REVERSAL}
+                for item in linked_adjustments
+            )
+            and credit_gross + parameters.amount_tolerance >= invoice.gross_amount
         )
-        credit_net = _sum([item.net_amount for item in linked_adjustments])
-        credit_vat = _sum([item.vat_amount for item in linked_adjustments])
-        credit_gross = _sum([item.gross_amount for item in linked_adjustments])
         target_net = ZERO if cancelled else max(ZERO, invoice.net_amount - credit_net)
         target_vat = ZERO if cancelled else max(ZERO, invoice.vat_amount - credit_vat)
         target_gross = ZERO if cancelled else max(ZERO, invoice.gross_amount - credit_gross)
 
-        candidates = self._receipt_candidates(invoice, receipts, available, parameters)
+        candidates = self._receipt_candidates(
+            invoice,
+            invoices=invoices,
+            receipts=receipts,
+            available=available,
+            parameters=parameters,
+        )
         matched: list[GoodsReceiptRecord] = []
         confidences: list[MatchConfidence] = []
         net_parts: list[Decimal] = []
@@ -497,26 +585,64 @@ class ThreeWayMatchControl:
                 break
 
         linked_orders = self._linked_orders(invoice, orders)
-        order_covered = ZERO
-        approved_variance = _sum([item.approved_price_variance for item in linked_orders])
+        allocated_orders: list[PurchaseOrderRecord] = []
+        order_covered = order_vat_covered = order_gross_covered = ZERO
+        order_quantity_covered = ZERO
         for order in linked_orders:
             pool = order_available[order.record_id]
-            take = min(target_net - order_covered, pool.net)
-            if take > ZERO:
-                order_covered += take
+            take_net = min(max(ZERO, target_net - order_covered), pool.net)
+            take_vat = min(max(ZERO, target_vat - order_vat_covered), pool.vat or ZERO)
+            take_gross = min(max(ZERO, target_gross - order_gross_covered), pool.gross or ZERO)
+            take_quantity = (
+                min(max(ZERO, invoice.quantity - order_quantity_covered), pool.quantity)
+                if invoice.quantity is not None and pool.quantity is not None
+                else ZERO
+            )
+            if any(value > ZERO for value in (take_net, take_vat, take_gross, take_quantity)):
+                allocated_orders.append(order)
+                order_covered += take_net
+                order_vat_covered += take_vat
+                order_gross_covered += take_gross
+                order_quantity_covered += take_quantity
                 if not order.reusable:
-                    pool.net -= take
+                    pool.net -= take_net
+                    if pool.vat is not None:
+                        pool.vat -= take_vat
+                    if pool.gross is not None:
+                        pool.gross -= take_gross
+                    if pool.quantity is not None:
+                        pool.quantity -= take_quantity
 
         matched_net = _sum(net_parts)
         matched_vat = _sum(vat_parts)
         matched_gross = _sum(gross_parts)
-        tolerance = parameters.amount_tolerance + approved_variance
-        net_difference = _positive_difference(target_net, matched_net, tolerance)
-        # VAT and gross are only covered by those same dimensions; net is never substituted.
-        vat_difference = _positive_difference(target_vat, matched_vat, parameters.amount_tolerance)
-        gross_difference = _positive_difference(
-            target_gross, matched_gross, parameters.amount_tolerance
+        approved_variance = _sum(
+            [item.approved_price_variance for item in allocated_orders]
+            + [item.approved_price_variance for item in matched]
         )
+        tolerance = parameters.amount_tolerance + approved_variance
+        receipt_net_difference = _positive_difference(target_net, matched_net, tolerance)
+        order_net_difference = (
+            _positive_difference(target_net, order_covered, tolerance) if linked_orders else ZERO
+        )
+        net_difference = max(receipt_net_difference, order_net_difference)
+        # VAT and gross are only covered by those same dimensions; net is never substituted.
+        receipt_vat_difference = _positive_difference(
+            target_vat, matched_vat, parameters.amount_tolerance
+        )
+        order_vat_difference = (
+            _positive_difference(target_vat, order_vat_covered, parameters.amount_tolerance)
+            if linked_orders
+            else ZERO
+        )
+        vat_difference = max(receipt_vat_difference, order_vat_difference)
+        receipt_gross_difference = _positive_difference(target_gross, matched_gross, tolerance)
+        order_gross_difference = (
+            _positive_difference(target_gross, order_gross_covered, tolerance)
+            if linked_orders
+            else ZERO
+        )
+        gross_difference = max(receipt_gross_difference, order_gross_difference)
         quantity_difference = (
             _positive_difference(
                 invoice.quantity,
@@ -526,10 +652,18 @@ class ThreeWayMatchControl:
             if invoice.quantity is not None and any(item.quantity is not None for item in matched)
             else None
         )
+        if invoice.quantity is not None and linked_orders:
+            order_quantity_difference = _positive_difference(
+                invoice.quantity, order_quantity_covered, parameters.quantity_tolerance
+            )
+            quantity_difference = max(quantity_difference or ZERO, order_quantity_difference)
+        order_shortfall = any(
+            value > ZERO
+            for value in (order_net_difference, order_vat_difference, order_gross_difference)
+        )
         finding, status, uncertainty = self._classify(
             invoice,
             bool(matched),
-            linked_orders,
             confidences,
             net_difference,
             vat_difference,
@@ -537,22 +671,22 @@ class ThreeWayMatchControl:
             quantity_difference,
             cancelled,
             invoice.record_id in duplicate_ids,
-            order_covered,
+            order_shortfall,
             parameters,
         )
         confidence = (
-            min(confidences, key=self._confidence_rank) if confidences else MatchConfidence.NONE
+            max(confidences, key=self._confidence_rank) if confidences else MatchConfidence.NONE
         )
         evidence = _merge_refs(
             invoice.evidence_refs,
-            *(item.evidence_refs for item in linked_orders),
+            *(item.evidence_refs for item in allocated_orders),
             *(item.evidence_refs for item in matched),
             *(item.evidence_refs for item in related_nonaccepted),
             *(item.evidence_refs for item in linked_adjustments),
         )
         matched_ids = tuple(
             sorted(
-                {item.record_id for item in linked_orders}
+                {item.record_id for item in allocated_orders}
                 | {item.record_id for item in matched}
                 | {item.record_id for item in linked_adjustments}
             )
@@ -563,8 +697,8 @@ class ThreeWayMatchControl:
         counter_tests = self._counter_tests(
             invoice,
             [*matched, *related_nonaccepted],
-            linked_orders,
-            linked_adjustments,
+            tuple(allocated_orders),
+            tuple(linked_adjustments),
             approved_variance,
             parameters,
         )
@@ -629,6 +763,7 @@ class ThreeWayMatchControl:
     def _receipt_candidates(
         self,
         invoice: PurchaseInvoiceRecord,
+        invoices: tuple[PurchaseInvoiceRecord, ...],
         receipts: tuple[GoodsReceiptRecord, ...],
         available: dict[str, _Available],
         parameters: ThreeWayMatchParameters,
@@ -652,10 +787,24 @@ class ThreeWayMatchControl:
             receipt_link = bool(invoice.goods_receipt_reference) and (
                 _norm(invoice.goods_receipt_reference) == _norm(receipt.receipt_reference)
             )
+            claimed_by_other = bool(receipt.invoice_reference) and not (
+                _norm(receipt.invoice_reference) == _norm(invoice.invoice_reference)
+            )
+            claimed_by_other = claimed_by_other or any(
+                other.record_id != invoice.record_id
+                and _norm(other.vendor_id) == _norm(invoice.vendor_id)
+                and bool(other.goods_receipt_reference)
+                and _norm(other.goods_receipt_reference) == _norm(receipt.receipt_reference)
+                for other in invoices
+            )
+            if claimed_by_other and not exact:
+                continue
             distance = abs((invoice.invoice_date - receipt.receipt_date).days)
             amount_distance = abs(invoice.net_amount - available[receipt.record_id].net)
             fallback = (
-                distance <= parameters.date_window_days
+                not receipt.invoice_reference
+                and not receipt.purchase_order_reference
+                and distance <= parameters.date_window_days
                 and amount_distance <= parameters.amount_tolerance
             )
             if exact:
@@ -712,7 +861,6 @@ class ThreeWayMatchControl:
     def _classify(
         invoice: PurchaseInvoiceRecord,
         has_receipt: bool,
-        orders: tuple[PurchaseOrderRecord, ...],
         confidences: list[MatchConfidence],
         net_difference: Decimal,
         vat_difference: Decimal,
@@ -720,7 +868,7 @@ class ThreeWayMatchControl:
         quantity_difference: Decimal | None,
         cancelled: bool,
         duplicate: bool,
-        order_covered: Decimal,
+        order_shortfall: bool,
         parameters: ThreeWayMatchParameters,
     ) -> tuple[MatchFinding, OutcomeStatus, tuple[str, ...]]:
         if duplicate:
@@ -734,7 +882,7 @@ class ThreeWayMatchControl:
         if invoice.gross_amount > ZERO and gross_difference == ZERO and not has_receipt:
             # A fully linked credit/return can extinguish the invoice without a receipt.
             return MatchFinding.CANCELLED_OR_REVERSED, OutcomeStatus.DISMISSED, ()
-        if invoice.classification == PurchaseClassification.UNKNOWN:
+        if invoice.classification in {None, PurchaseClassification.UNKNOWN}:
             return (
                 MatchFinding.REVIEW_CLASSIFICATION,
                 OutcomeStatus.REVIEW_NEEDED,
@@ -748,6 +896,12 @@ class ThreeWayMatchControl:
                 OutcomeStatus.REVIEW_NEEDED,
                 ("no accepted goods receipt or service acceptance matched",),
             )
+        if order_shortfall:
+            return (
+                MatchFinding.OVER_INVOICED,
+                OutcomeStatus.REVIEW_NEEDED,
+                ("invoice exceeds allocated order coverage",),
+            )
         if quantity_difference is not None and quantity_difference > parameters.quantity_tolerance:
             return (
                 MatchFinding.PARTIAL_DELIVERY,
@@ -755,12 +909,6 @@ class ThreeWayMatchControl:
                 ("invoiced quantity exceeds matched accepted quantity",),
             )
         if net_difference > ZERO or vat_difference > ZERO or gross_difference > ZERO:
-            if orders and order_covered + parameters.amount_tolerance < invoice.net_amount:
-                return (
-                    MatchFinding.OVER_INVOICED,
-                    OutcomeStatus.REVIEW_NEEDED,
-                    ("invoice exceeds allocated order or accepted receipt coverage",),
-                )
             return (
                 MatchFinding.AMOUNT_DIFFERENCE,
                 OutcomeStatus.REVIEW_NEEDED,

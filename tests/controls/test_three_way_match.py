@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date, timedelta
 from decimal import Decimal
 from hashlib import sha256
@@ -262,9 +263,14 @@ def test_approved_price_variance_suppresses_net_variance() -> None:
 def test_duplicate_invoice_is_detected_but_duplicate_source_representation_is_deduped() -> None:
     inv = invoice()
     assert len(run(inv, inv, receipt())) == 1
-    results = run(inv, invoice("inv-copy"), receipt())
-    assert by_subject(results, "inv-1").finding == MatchFinding.DUPLICATE_INVOICE
+    representation = invoice("inv-copy")
+    represented = run(inv, representation, receipt())
+    assert len(represented) == 1
+    assert representation.evidence_refs[0] in represented[0].evidence_refs
+    results = run(inv, invoice("inv-copy", day=DAY + timedelta(days=1)), receipt())
+    assert by_subject(results, "inv-1").finding == MatchFinding.MATCHED
     assert by_subject(results, "inv-copy").finding == MatchFinding.DUPLICATE_INVOICE
+    assert sum(item.exposure_amount for item in results) == D("119")
 
 
 @pytest.mark.parametrize(
@@ -356,3 +362,54 @@ def test_non_decimal_money_is_rejected() -> None:
             PurchaseClassification.GOODS,
             ev(9999, "x"),
         )
+
+
+def test_explicit_receipt_claim_is_reserved_before_fallback() -> None:
+    fallback = invoice("a", ref="INV-A", po=None)
+    explicit = invoice("z", ref="INV-Z", po=None)
+    claimed = receipt("r", invoice_ref="INV-Z", po=None)
+    results = run(fallback, explicit, claimed)
+    assert by_subject(results, "z").finding == MatchFinding.MATCHED
+    assert by_subject(results, "a").finding == MatchFinding.UNMATCHED_INVOICE
+
+
+def test_order_vat_and_gross_are_compared_separately() -> None:
+    result = run(invoice(), order(vat="0", gross="100"), receipt())[0]
+    assert result.finding == MatchFinding.OVER_INVOICED
+    assert (result.vat_difference, result.gross_difference) == (D("19"), D("19"))
+
+
+def test_exhausted_order_reports_only_uncovered_net() -> None:
+    first = invoice("a", ref="I-A", net="60", vat="11.4", gross="71.4", quantity="6")
+    second = invoice("b", ref="I-B", net="60", vat="11.4", gross="71.4", quantity="6")
+    results = run(
+        first,
+        second,
+        order(),
+        receipt("r-a", net="60", vat="11.4", gross="71.4", invoice_ref="I-A", quantity="6"),
+        receipt("r-b", net="60", vat="11.4", gross="71.4", invoice_ref="I-B", quantity="6"),
+    )
+    assert by_subject(results, "b").finding == MatchFinding.OVER_INVOICED
+    assert by_subject(results, "b").exposure_amount == D("20")
+
+
+def test_po_level_credit_is_allocated_only_once() -> None:
+    first = invoice("a", ref="I-A", net="60", vat="11.4", gross="71.4")
+    second = invoice("b", ref="I-B", net="60", vat="11.4", gross="71.4")
+    credit = replace(
+        adjustment(MatchAdjustmentKind.CREDIT_NOTE),
+        invoice_reference=None,
+        purchase_order_reference="PO-1",
+        net_amount=D("100"),
+        vat_amount=D("19"),
+        gross_amount=D("119"),
+    )
+    results = run(first, second, credit)
+    assert by_subject(results, "a").exposure_amount == 0
+    assert by_subject(results, "b").exposure_amount == D("20")
+
+
+def test_missing_classification_is_review_needed() -> None:
+    result = run(replace(invoice(), classification=None), receipt())[0]
+    assert result.finding == MatchFinding.REVIEW_CLASSIFICATION
+    assert result.status == OutcomeStatus.REVIEW_NEEDED
