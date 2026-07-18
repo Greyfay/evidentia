@@ -25,6 +25,7 @@ from audit_compiler.duckdb_store import (
 from audit_compiler.inventory import SourceFile, inventory_dossier
 from audit_compiler.models import (
     CaseBundle,
+    ControlCompilationMetadata,
     DataLocale,
     EngagementSummary,
     ImmutableModel,
@@ -411,6 +412,7 @@ class CompileRequest(ImmutableModel):
     name: str | None = None
     database: Path | None = None
     params: dict[str, object] = Field(default_factory=dict)
+    control_ids: tuple[str, ...] | None = None
     locale: DataLocale = DataLocale.DE
 
 
@@ -430,6 +432,7 @@ class CompilerService:
         root = request.dossier.expanduser().resolve()
         if not root.is_dir():
             raise NotADirectoryError(f"dossier path is not a directory: {request.dossier}")
+        engine = ControlEngine(request.control_ids)
         engagement_id = request.engagement_id or str(uuid4())
         run_id = request.run_id or str(uuid4())
         database = request.database or root / ".admissible" / "audit.duckdb"
@@ -482,6 +485,7 @@ class CompilerService:
 
         with using_locale(dossier.locale.value):
             context = ControlContext(dossier=dossier, params=request.params)
+            control_run = engine.run(context)
             cases = tuple(
                 case_dict(
                     finding,
@@ -489,7 +493,7 @@ class CompilerService:
                     engagement_id=engagement_id,
                     run_id=run_id,
                 )
-                for finding in ControlEngine().run(context)
+                for finding in control_run.findings
             )
         verdicts = [case["verdict"] for case in cases]
         evidence_count = sum(
@@ -516,6 +520,16 @@ class CompilerService:
                     "rejected": verdicts.count("REJECTED"),
                 },
                 source_files=sources,
+                controls=ControlCompilationMetadata(
+                    selected=control_run.selected,
+                    executed=control_run.executed,
+                    failed=control_run.failed,
+                    skipped=control_run.skipped,
+                    warnings=tuple(
+                        f"control skipped by explicit allowlist: {control_id}"
+                        for control_id in control_run.skipped
+                    ),
+                ),
             ),
             cases=cases,
         )

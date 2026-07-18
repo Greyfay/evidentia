@@ -416,6 +416,16 @@ class SourceCompilation(ImmutableModel):
     warnings: tuple[str, ...] = ()
 
 
+class ControlCompilationMetadata(ImmutableModel):
+    """Visible record of control selection and execution for this compilation."""
+
+    selected: tuple[str, ...]
+    executed: tuple[str, ...]
+    failed: tuple[str, ...]
+    skipped: tuple[str, ...]
+    warnings: tuple[str, ...] = ()
+
+
 class EngagementSummary(ImmutableModel):
     engagement_id: str
     run_id: str
@@ -426,6 +436,7 @@ class EngagementSummary(ImmutableModel):
     methodology_version: str
     counts: dict[str, int]
     source_files: tuple[SourceCompilation, ...]
+    controls: ControlCompilationMetadata
 
 
 class CaseBundle(ImmutableModel):

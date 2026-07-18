@@ -50,6 +50,7 @@ _LOGGER = logging.getLogger(__name__)
 class CompileRequest(BaseModel):
     dossier_path: str
     name: str | None = None
+    control_ids: tuple[str, ...] | None = None
 
 
 class ReviewRequest(BaseModel):
@@ -57,9 +58,11 @@ class ReviewRequest(BaseModel):
     note: str | None = None
 
 
-def _compile(path: Path, *, name: str | None = None) -> dict:
+def _compile(
+    path: Path, *, name: str | None = None, control_ids: tuple[str, ...] | None = None
+) -> dict:
     return CompilerService().compile(
-        CompilerRequest(dossier=path, name=name)
+        CompilerRequest(dossier=path, name=name, control_ids=control_ids)
     ).model_dump(mode="json")
 
 
@@ -83,7 +86,12 @@ def compile_endpoint(request: CompileRequest) -> dict:
     path = Path(request.dossier_path).expanduser()
     if not path.exists():
         raise HTTPException(400, f"dossier path does not exist: {request.dossier_path}")
-    _STATE["bundle"] = _compile(path, name=request.name)
+    try:
+        _STATE["bundle"] = _compile(
+            path, name=request.name, control_ids=request.control_ids
+        )
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
     return _STATE["bundle"]["engagement"]
 
 
@@ -184,6 +192,15 @@ async def upload_engagement(request: Request) -> dict:
     uploads = [value for _name, value in form.multi_items() if not isinstance(value, str)]
     if not uploads:
         raise HTTPException(400, "no file uploaded")
+    raw_control_ids = form.getlist("control_ids")
+    configured_ids = tuple(
+        control_id.strip()
+        for value in raw_control_ids
+        if isinstance(value, str)
+        for control_id in value.split(",")
+        if control_id.strip()
+    )
+    control_ids = configured_ids if raw_control_ids else None
 
     suffixes = [Path(u.filename or "").suffix.lower() for u in uploads]
     for upload, suffix in zip(uploads, suffixes, strict=True):
@@ -219,12 +236,16 @@ async def upload_engagement(request: Request) -> dict:
 
         started_at = time.monotonic()
         _LOGGER.info("compiling uploaded dossier: bytes=%d", budget[0])
-        bundle = _compile(persist_dir)
+        try:
+            bundle = _compile(persist_dir, control_ids=control_ids)
+        except ValueError as exc:
+            raise HTTPException(400, str(exc)) from exc
         _LOGGER.info("compiled uploaded dossier in %.2fs", time.monotonic() - started_at)
         ctx = AgentContext.from_compiled_run(
             persist_dir / ".admissible" / "audit.duckdb",
             bundle["engagement"]["engagement_id"],
             bundle["engagement"]["run_id"],
+            control_ids=tuple(bundle["engagement"]["controls"]["selected"]),
         )
         engagement_id = get_store().add_engagement(None, ctx, bundle)
         return {"engagement_id": engagement_id, "engagement": bundle["engagement"]}

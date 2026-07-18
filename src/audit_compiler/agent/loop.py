@@ -83,7 +83,9 @@ def start_investigation(
 
     planner = planner or get_planner()
     limits = limits or InvestigationLimits()
-    control_ids = [c.id for c in default_controls()]
+    control_ids = list(ctx.control_ids) if ctx.control_ids is not None else [
+        control.id for control in default_controls()
+    ]
     summary = build_dossier_summary(ctx, control_ids=control_ids)
 
     drafts = planner.propose_hypotheses(summary)
