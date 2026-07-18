@@ -14,7 +14,7 @@ import io
 from dataclasses import dataclass
 from pathlib import Path
 
-from audit_compiler.adapters.gdpdu import compile_gdpdu_dossier
+from audit_compiler.adapters.gdpdu import parse_delimited_values, parse_gdpdu_index
 from audit_compiler.adapters.xlsx import parse_xlsx_workbook
 from audit_compiler.inventory import inventory_dossier, sha256_file
 from audit_compiler.models import DataLocale, EvidenceRef, SourceType
@@ -224,28 +224,37 @@ def load_dossier(
         folder_prefix = "" if folder_prefix == "." else f"{folder_prefix}/"
         try:
             # GDPdU data-file URLs are relative to the index.xml directory.
-            compilation = compile_gdpdu_dossier(index_path, dossier_root=folder)
+            definitions = parse_gdpdu_index(index_path, dossier_root=folder)
         except Exception as exc:  # noqa: BLE001 - surfaced as a warning, never invented data
             warnings.append((_rel(index_path, root), f"GDPdU compile failed: {exc}"))
             continue
-        for parsed in compilation.tables:
-            source_path = f"{folder_prefix}{parsed.definition.source_path}"
+        for definition in definitions:
+            source_path = f"{folder_prefix}{definition.source_path}"
             gdpdu_data_paths.add(source_path)
-            columns = tuple(c.name for c in parsed.definition.columns)
+            try:
+                rows, row_numbers, file_sha256 = parse_delimited_values(
+                    folder / definition.source_path,
+                    definition,
+                    dossier_root=folder,
+                )
+            except Exception as exc:  # noqa: BLE001 - surfaced; no data is invented
+                warnings.append((source_path, f"GDPdU compile failed: {exc}"))
+                continue
+            columns = tuple(column.name for column in definition.columns)
             source_type = (
                 SourceType.CSV_ROW
-                if parsed.source_file.file_type == "csv"
+                if Path(definition.source_path).suffix.lower() == ".csv"
                 else SourceType.TEXT_ROW
             )
             tables.append(
                 SourceTable(
-                    name=parsed.definition.table_name,
+                    name=definition.table_name,
                     source_path=source_path,
-                    file_sha256=parsed.source_file.sha256,
+                    file_sha256=file_sha256,
                     source_type=source_type,
                     columns=columns,
-                    rows=tuple(record.named_values for record in parsed.records),
-                    row_numbers=tuple(record.row_number for record in parsed.records),
+                    rows=rows,
+                    row_numbers=row_numbers,
                 )
             )
 

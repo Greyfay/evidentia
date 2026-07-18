@@ -1,6 +1,5 @@
 from pathlib import Path
 
-import duckdb
 import pytest
 
 from audit_compiler.compiler import CompileRequest, CompilerService
@@ -29,7 +28,7 @@ def test_atomic_store_rolls_back_run_tables_and_events(tmp_path: Path) -> None:
     database = tmp_path / "rollback.duckdb"
     store = DuckDBAuditStore(database)
 
-    with pytest.raises(duckdb.ConstraintException):
+    with pytest.raises(ValueError, match="event IDs must be unique"):
         store.persist_dossier(
             "eng-rollback",
             "run-rollback",
@@ -41,6 +40,7 @@ def test_atomic_store_rolls_back_run_tables_and_events(tmp_path: Path) -> None:
     assert connection.execute("SELECT count(*) FROM audit_runs").fetchone()[0] == 0
     assert connection.execute("SELECT count(*) FROM audit_ir_tables").fetchone()[0] == 0
     assert connection.execute("SELECT count(*) FROM audit_ir_events").fetchone()[0] == 0
+    assert connection.execute("SELECT count(*) FROM audit_ir_event_batches").fetchone()[0] == 0
     connection.close()
 
 
