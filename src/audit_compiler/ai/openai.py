@@ -6,7 +6,6 @@ from typing import Any
 
 from audit_compiler.ai.models import CasePayload, CaseSummary
 
-
 SYSTEM_PROMPT = """You summarize an already-calculated audit case.
 Do not calculate amounts, infer missing numbers, query tools or databases, or invent evidence.
 Use only supplied evidence_id and calculation_id values. Every narrative field must cite its
