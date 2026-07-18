@@ -1,4 +1,5 @@
 import type { Verdict, Severity, SourceFileStatus, CounterTestOutcome } from "./types";
+import type { HypothesisStatus, HypothesisPriority } from "./investigation-types";
 
 export const VERDICT_META: Record<
   Verdict,
@@ -34,6 +35,24 @@ export const COUNTER_TEST_META: Record<
   present: { label: "Present", icon: "✓", color: "var(--forest)" },
   absent: { label: "Absent", icon: "✗", color: "var(--brick)" },
   not_applicable: { label: "N/A", icon: "–", color: "var(--slate)" },
+};
+
+export const HYPOTHESIS_STATUS_META: Record<
+  HypothesisStatus,
+  { label: string; color: string; glow: string; border: string }
+> = {
+  proposed: { label: "Proposed", color: "var(--steel)", glow: "var(--steel-glow)", border: "var(--steel)" },
+  active: { label: "Active", color: "var(--amber)", glow: "var(--amber-glow)", border: "var(--amber)" },
+  submitted: { label: "Submitted", color: "var(--brick)", glow: "var(--brick-glow)", border: "var(--brick)" },
+  dismissed: { label: "Dismissed", color: "var(--forest)", glow: "var(--forest-glow)", border: "var(--forest)" },
+  insufficient: { label: "Insufficient", color: "var(--slate)", glow: "rgba(107,117,128,0.14)", border: "var(--slate)" },
+  awaiting_auditor: { label: "Awaiting auditor", color: "var(--amber-dim)", glow: "var(--amber-glow)", border: "var(--amber-dim)" },
+};
+
+export const HYPOTHESIS_PRIORITY_META: Record<HypothesisPriority, { label: string }> = {
+  high: { label: "High" },
+  medium: { label: "Medium" },
+  low: { label: "Low" },
 };
 
 export function formatBytes(bytes: number): string {

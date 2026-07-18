@@ -1,0 +1,195 @@
+{
+  "engagement": {
+    "engagement_id": "eng-8841",
+    "name": "Q4 Vendor Onboarding Dossier (demo fixture)",
+    "counts": {
+      "source_files": 5,
+      "evidence_records": 214,
+      "entities": 37,
+      "events": 96,
+      "confirmed": 0,
+      "human_review": 0,
+      "dismissed": 0,
+      "rejected": 0
+    },
+    "source_files": [
+      { "path": "Ledger/postings_q4.txt", "bytes": 61230, "status": "parsed" },
+      { "path": "Vendors/master_changes.csv", "bytes": 9440, "status": "parsed" },
+      { "path": "Vendors/onboarding_forms.pdf", "bytes": 188120, "status": "parsed" },
+      { "path": "Travel/expense_reports.xlsx", "bytes": 22310, "status": "parsed" },
+      { "path": "Policies/authorization_matrix.docx", "bytes": 4890, "status": "warning" }
+    ]
+  },
+  "evidence_index": {
+    "ev-101": { "evidence_id": "ev-101", "source_path": "Vendors/master_changes.csv", "source_type": "csv_row", "locator": { "row": 14, "sheet": null, "cell": null, "page": null, "passage": null }, "raw_value": "2026-04-02;VEND-2291;created_by=USER-C;approved_by=USER-C;related_party_flag=blank", "file_sha256": "9f2a1c" },
+    "ev-102": { "evidence_id": "ev-102", "source_path": "Vendors/onboarding_forms.pdf", "source_type": "pdf_passage", "locator": { "row": null, "sheet": null, "cell": null, "page": 4, "passage": "Beneficial owner declaration left unsigned; field 6 (related parties) not completed." }, "raw_value": "Beneficial owner declaration left unsigned; field 6 (related parties) not completed.", "file_sha256": "3bcb77" },
+    "ev-103": { "evidence_id": "ev-103", "source_path": "Ledger/postings_q4.txt", "source_type": "text_row", "locator": { "row": 5521, "sheet": null, "cell": null, "page": null, "passage": null }, "raw_value": "2026-04-19;VEND-2291;INV-77410;42500.00;EUR;posted_by=USER-C", "file_sha256": "9f2a1c" },
+    "ev-104": { "evidence_id": "ev-104", "source_path": "Vendors/master_changes.csv", "source_type": "csv_row", "locator": { "row": 15, "sheet": null, "cell": null, "page": null, "passage": null }, "raw_value": "HR filing cross-check: USER-C reports to CFO, no family linkage found in HR system", "file_sha256": "9f2a1c" },
+    "ev-201": { "evidence_id": "ev-201", "source_path": "Vendors/master_changes.csv", "source_type": "csv_row", "locator": { "row": 31, "sheet": null, "cell": null, "page": null, "passage": null }, "raw_value": "2026-05-03;VEND-3350;created_by=USER-A;approved_by=USER-A", "file_sha256": "9f2a1c" },
+    "ev-202": { "evidence_id": "ev-202", "source_path": "Ledger/postings_q4.txt", "source_type": "text_row", "locator": { "row": 6112, "sheet": null, "cell": null, "page": null, "passage": null }, "raw_value": "2026-05-11;VEND-3350;INV-88190;61800.00;EUR;posted_by=USER-A;paid_by=USER-A", "file_sha256": "9f2a1c" },
+    "ev-203": { "evidence_id": "ev-203", "source_path": "Policies/authorization_matrix.docx", "source_type": "docx_paragraph", "locator": { "row": null, "sheet": null, "cell": null, "page": null, "passage": "Create, approve, and pay must be held by three distinct users for vendor payments above EUR 10,000." }, "raw_value": "Create, approve, and pay must be held by three distinct users for vendor payments above EUR 10,000.", "file_sha256": "1a90de" },
+    "ev-204": { "evidence_id": "ev-204", "source_path": "Ledger/postings_q4.txt", "source_type": "text_row", "locator": { "row": 6113, "sheet": null, "cell": null, "page": null, "passage": null }, "raw_value": "2026-05-11;VEND-3350;INV-88190;61800.00;EUR;posted_by=USER-A;paid_by=USER-A;batch=2", "file_sha256": "9f2a1c" },
+    "ev-301": { "evidence_id": "ev-301", "source_path": "Ledger/postings_q4.txt", "source_type": "text_row", "locator": { "row": 7002, "sheet": null, "cell": null, "page": null, "passage": null }, "raw_value": "2026-05-20;VEND-1180;INV-88213;18400.00;EUR;batch=A;posted_by=USER-B", "file_sha256": "9f2a1c" },
+    "ev-302": { "evidence_id": "ev-302", "source_path": "Ledger/postings_q4.txt", "source_type": "text_row", "locator": { "row": 7451, "sheet": null, "cell": null, "page": null, "passage": null }, "raw_value": "2026-05-22;VEND-1180;INV-88213;18400.00;EUR;batch=B;posted_by=USER-D", "file_sha256": "9f2a1c" },
+    "ev-401": { "evidence_id": "ev-401", "source_path": "Travel/expense_reports.xlsx", "source_type": "xlsx_cell", "locator": { "row": 9, "sheet": "Q4", "cell": "F9", "page": null, "passage": null }, "raw_value": "6800.00 EUR — no secondary approver field populated", "file_sha256": "77bc21" }
+  },
+  "graph": {
+    "nodes": [
+      { "id": "USER-A", "label": "USER-A", "kind": "entity" },
+      { "id": "USER-C", "label": "USER-C", "kind": "entity" },
+      { "id": "VEND-2291", "label": "VEND-2291", "kind": "entity" },
+      { "id": "VEND-3350", "label": "VEND-3350", "kind": "entity" },
+      { "id": "VEND-1180", "label": "VEND-1180", "kind": "entity" },
+      { "id": "INV-77410", "label": "INV-77410", "kind": "event" },
+      { "id": "INV-88190", "label": "INV-88190", "kind": "event" },
+      { "id": "INV-88213", "label": "INV-88213", "kind": "event" },
+      { "id": "h-related-party", "label": "Related-party vendor", "kind": "hypothesis" },
+      { "id": "h-sod", "label": "SoD override", "kind": "hypothesis" },
+      { "id": "h-duplicate", "label": "Duplicate payment", "kind": "hypothesis" }
+    ],
+    "edges": [
+      { "from": "USER-C", "to": "VEND-2291", "label": "created+approved" },
+      { "from": "VEND-2291", "to": "INV-77410", "label": "posted" },
+      { "from": "INV-77410", "to": "h-related-party" },
+      { "from": "USER-A", "to": "VEND-3350", "label": "created+approved+paid" },
+      { "from": "VEND-3350", "to": "INV-88190", "label": "posted" },
+      { "from": "INV-88190", "to": "h-sod" },
+      { "from": "VEND-1180", "to": "INV-88213", "label": "posted twice" },
+      { "from": "INV-88213", "to": "h-duplicate" }
+    ]
+  },
+  "steps": [
+    {
+      "investigation_id": "inv-5521",
+      "engagement_id": "eng-8841",
+      "objective": "Determine whether Q4 vendor onboarding created undisclosed related-party or segregation-of-duties exposure.",
+      "status": "in_progress",
+      "hypotheses": [
+        { "hypothesis_id": "h-related-party", "claim": "Vendor VEND-2291 is a related party onboarded without disclosure, creating a conflict-of-interest exposure.", "category": "related_party", "status": "proposed", "priority": "high", "subject": "VEND-2291", "supporting_evidence_ids": [], "contradicting_evidence_ids": [], "missing_evidence": [], "candidate_exposure": null, "verdict_recommendation": null },
+        { "hypothesis_id": "h-sod", "claim": "USER-A held create, approve, and pay rights over vendor VEND-3350, breaching the segregation-of-duties policy.", "category": "segregation_of_duties", "status": "proposed", "priority": "high", "subject": "VEND-3350", "supporting_evidence_ids": [], "contradicting_evidence_ids": [], "missing_evidence": [], "candidate_exposure": null, "verdict_recommendation": null },
+        { "hypothesis_id": "h-duplicate", "claim": "Invoice INV-88213 to VEND-1180 was posted twice across separate batches, overstating expense.", "category": "duplicate_payment", "status": "proposed", "priority": "medium", "subject": "VEND-1180", "supporting_evidence_ids": [], "contradicting_evidence_ids": [], "missing_evidence": [], "candidate_exposure": null, "verdict_recommendation": null },
+        { "hypothesis_id": "h-travel", "claim": "Executive travel reimbursements exceeded the policy ceiling without a secondary approver.", "category": "expense_authorization", "status": "proposed", "priority": "low", "subject": "Executive travel", "supporting_evidence_ids": [], "contradicting_evidence_ids": [], "missing_evidence": [], "candidate_exposure": null, "verdict_recommendation": null }
+      ],
+      "completed_actions": [],
+      "timeline": [
+        { "kind": "hypothesis_created", "at": "2026-07-18T09:00:04Z", "hypothesis_id": "h-related-party", "detail": "Proposed from vendor master anomaly scan (related_party_flag blank on high-value vendor)." },
+        { "kind": "hypothesis_created", "at": "2026-07-18T09:00:05Z", "hypothesis_id": "h-sod", "detail": "Proposed from access-rights cross-reference (single user holds 3 conflicting roles)." },
+        { "kind": "hypothesis_created", "at": "2026-07-18T09:00:06Z", "hypothesis_id": "h-duplicate", "detail": "Proposed from ledger fuzzy-match on (vendor, amount, invoice_no) pairs." },
+        { "kind": "hypothesis_created", "at": "2026-07-18T09:00:07Z", "hypothesis_id": "h-travel", "detail": "Proposed from expense report threshold scan." }
+      ],
+      "questions_for_auditor": [],
+      "evidence_ids": []
+    },
+    {
+      "investigation_id": "inv-5521",
+      "engagement_id": "eng-8841",
+      "objective": "Determine whether Q4 vendor onboarding created undisclosed related-party or segregation-of-duties exposure.",
+      "status": "in_progress",
+      "hypotheses": [
+        { "hypothesis_id": "h-related-party", "claim": "Vendor VEND-2291 is a related party onboarded without disclosure, creating a conflict-of-interest exposure.", "category": "related_party", "status": "active", "priority": "high", "subject": "VEND-2291", "supporting_evidence_ids": ["ev-101", "ev-102", "ev-103"], "contradicting_evidence_ids": [], "missing_evidence": ["HR family-linkage register"], "candidate_exposure": null, "verdict_recommendation": null },
+        { "hypothesis_id": "h-sod", "claim": "USER-A held create, approve, and pay rights over vendor VEND-3350, breaching the segregation-of-duties policy.", "category": "segregation_of_duties", "status": "proposed", "priority": "high", "subject": "VEND-3350", "supporting_evidence_ids": [], "contradicting_evidence_ids": [], "missing_evidence": [], "candidate_exposure": null, "verdict_recommendation": null },
+        { "hypothesis_id": "h-duplicate", "claim": "Invoice INV-88213 to VEND-1180 was posted twice across separate batches, overstating expense.", "category": "duplicate_payment", "status": "proposed", "priority": "medium", "subject": "VEND-1180", "supporting_evidence_ids": [], "contradicting_evidence_ids": [], "missing_evidence": [], "candidate_exposure": null, "verdict_recommendation": null },
+        { "hypothesis_id": "h-travel", "claim": "Executive travel reimbursements exceeded the policy ceiling without a secondary approver.", "category": "expense_authorization", "status": "proposed", "priority": "low", "subject": "Executive travel", "supporting_evidence_ids": [], "contradicting_evidence_ids": [], "missing_evidence": [], "candidate_exposure": null, "verdict_recommendation": null }
+      ],
+      "completed_actions": [
+        { "tool_name": "search_dossier", "structured_result": "3 records found linking USER-C to VEND-2291 creation, approval, and first posting.", "evidence_ids": ["ev-101", "ev-102", "ev-103"], "calculation": null, "errors": [], "timestamp": "2026-07-18T09:01:12Z" }
+      ],
+      "timeline": [
+        { "kind": "hypothesis_created", "at": "2026-07-18T09:00:04Z", "hypothesis_id": "h-related-party", "detail": "Proposed from vendor master anomaly scan (related_party_flag blank on high-value vendor)." },
+        { "kind": "hypothesis_created", "at": "2026-07-18T09:00:05Z", "hypothesis_id": "h-sod", "detail": "Proposed from access-rights cross-reference (single user holds 3 conflicting roles)." },
+        { "kind": "hypothesis_created", "at": "2026-07-18T09:00:06Z", "hypothesis_id": "h-duplicate", "detail": "Proposed from ledger fuzzy-match on (vendor, amount, invoice_no) pairs." },
+        { "kind": "hypothesis_created", "at": "2026-07-18T09:00:07Z", "hypothesis_id": "h-travel", "detail": "Proposed from expense report threshold scan." },
+        { "kind": "tool_selected", "at": "2026-07-18T09:01:02Z", "hypothesis_id": "h-related-party", "tool_name": "search_dossier", "detail": "Highest-priority open hypothesis selected for investigation." },
+        { "kind": "tool_result", "at": "2026-07-18T09:01:12Z", "hypothesis_id": "h-related-party", "tool_name": "search_dossier", "detail": "Master-change row, onboarding-form gap, and first posting all retrieved." }
+      ],
+      "questions_for_auditor": [],
+      "evidence_ids": ["ev-101", "ev-102", "ev-103"]
+    },
+    {
+      "investigation_id": "inv-5521",
+      "engagement_id": "eng-8841",
+      "objective": "Determine whether Q4 vendor onboarding created undisclosed related-party or segregation-of-duties exposure.",
+      "status": "in_progress",
+      "hypotheses": [
+        { "hypothesis_id": "h-related-party", "claim": "Vendor VEND-2291 is a related party onboarded without disclosure, creating a conflict-of-interest exposure.", "category": "related_party", "status": "active", "priority": "high", "subject": "VEND-2291", "supporting_evidence_ids": ["ev-101", "ev-102", "ev-103"], "contradicting_evidence_ids": ["ev-104"], "missing_evidence": ["Signed beneficial-owner declaration"], "candidate_exposure": { "amount": "42500.00", "currency": "EUR", "label": "gross" }, "verdict_recommendation": null },
+        { "hypothesis_id": "h-sod", "claim": "USER-A held create, approve, and pay rights over vendor VEND-3350, breaching the segregation-of-duties policy.", "category": "segregation_of_duties", "status": "active", "priority": "high", "subject": "VEND-3350", "supporting_evidence_ids": ["ev-201", "ev-202", "ev-203"], "contradicting_evidence_ids": [], "missing_evidence": [], "candidate_exposure": { "amount": "61800.00", "currency": "EUR", "label": "gross" }, "verdict_recommendation": null },
+        { "hypothesis_id": "h-duplicate", "claim": "Invoice INV-88213 to VEND-1180 was posted twice across separate batches, overstating expense.", "category": "duplicate_payment", "status": "proposed", "priority": "medium", "subject": "VEND-1180", "supporting_evidence_ids": [], "contradicting_evidence_ids": [], "missing_evidence": [], "candidate_exposure": null, "verdict_recommendation": null },
+        { "hypothesis_id": "h-travel", "claim": "Executive travel reimbursements exceeded the policy ceiling without a secondary approver.", "category": "expense_authorization", "status": "proposed", "priority": "low", "subject": "Executive travel", "supporting_evidence_ids": [], "contradicting_evidence_ids": [], "missing_evidence": [], "candidate_exposure": null, "verdict_recommendation": null }
+      ],
+      "completed_actions": [
+        { "tool_name": "search_dossier", "structured_result": "3 records found linking USER-C to VEND-2291 creation, approval, and first posting.", "evidence_ids": ["ev-101", "ev-102", "ev-103"], "calculation": null, "errors": [], "timestamp": "2026-07-18T09:01:12Z" },
+        { "tool_name": "cross_reference_hr_registry", "structured_result": "HR filing shows USER-C reports to CFO; no family or shareholder linkage recorded against VEND-2291's registered owner.", "evidence_ids": ["ev-104"], "calculation": null, "errors": [], "timestamp": "2026-07-18T09:02:30Z" },
+        { "tool_name": "compute_exposure", "structured_result": "Gross posted exposure for VEND-2291 across Q4: EUR 42,500.00.", "evidence_ids": ["ev-103"], "calculation": { "expression": "sum(posting.amount) WHERE vendor_id = 'VEND-2291'", "result": "42500.00", "sql": "SELECT SUM(amount) FROM postings WHERE vendor_id = 'VEND-2291'" }, "errors": [], "timestamp": "2026-07-18T09:02:41Z" },
+        { "tool_name": "search_dossier", "structured_result": "Access-matrix and ledger rows confirm USER-A as sole actor across create, approve, and pay for VEND-3350.", "evidence_ids": ["ev-201", "ev-202", "ev-203"], "calculation": null, "errors": [], "timestamp": "2026-07-18T09:03:15Z" },
+        { "tool_name": "compute_exposure", "structured_result": "Gross posted exposure for VEND-3350 invoice INV-88190: EUR 61,800.00.", "evidence_ids": ["ev-202"], "calculation": { "expression": "sum(posting.amount) WHERE invoice_no = 'INV-88190'", "result": "61800.00", "sql": "SELECT SUM(amount) FROM postings WHERE invoice_no = 'INV-88190'" }, "errors": [], "timestamp": "2026-07-18T09:03:22Z" }
+      ],
+      "timeline": [
+        { "kind": "hypothesis_created", "at": "2026-07-18T09:00:04Z", "hypothesis_id": "h-related-party", "detail": "Proposed from vendor master anomaly scan (related_party_flag blank on high-value vendor)." },
+        { "kind": "hypothesis_created", "at": "2026-07-18T09:00:05Z", "hypothesis_id": "h-sod", "detail": "Proposed from access-rights cross-reference (single user holds 3 conflicting roles)." },
+        { "kind": "hypothesis_created", "at": "2026-07-18T09:00:06Z", "hypothesis_id": "h-duplicate", "detail": "Proposed from ledger fuzzy-match on (vendor, amount, invoice_no) pairs." },
+        { "kind": "hypothesis_created", "at": "2026-07-18T09:00:07Z", "hypothesis_id": "h-travel", "detail": "Proposed from expense report threshold scan." },
+        { "kind": "tool_selected", "at": "2026-07-18T09:01:02Z", "hypothesis_id": "h-related-party", "tool_name": "search_dossier", "detail": "Highest-priority open hypothesis selected for investigation." },
+        { "kind": "tool_result", "at": "2026-07-18T09:01:12Z", "hypothesis_id": "h-related-party", "tool_name": "search_dossier", "detail": "Master-change row, onboarding-form gap, and first posting all retrieved." },
+        { "kind": "tool_selected", "at": "2026-07-18T09:02:18Z", "hypothesis_id": "h-related-party", "tool_name": "cross_reference_hr_registry", "detail": "Self-challenge: attempting to find an innocent explanation before proceeding." },
+        { "kind": "counter_evidence", "at": "2026-07-18T09:02:30Z", "hypothesis_id": "h-related-party", "tool_name": "cross_reference_hr_registry", "detail": "HR registry found no family or ownership linkage between USER-C and VEND-2291 — weakens the related-party claim." },
+        { "kind": "tool_result", "at": "2026-07-18T09:02:41Z", "hypothesis_id": "h-related-party", "tool_name": "compute_exposure", "detail": "Computed gross exposure ahead of verdict: EUR 42,500.00." },
+        { "kind": "tool_selected", "at": "2026-07-18T09:03:05Z", "hypothesis_id": "h-sod", "tool_name": "search_dossier", "detail": "Second-priority hypothesis picked up: SoD override on VEND-3350." },
+        { "kind": "tool_result", "at": "2026-07-18T09:03:15Z", "hypothesis_id": "h-sod", "tool_name": "search_dossier", "detail": "Confirmed single-user control across create, approve, pay — policy explicitly requires 3 distinct users above EUR 10,000." },
+        { "kind": "tool_result", "at": "2026-07-18T09:03:22Z", "hypothesis_id": "h-sod", "tool_name": "compute_exposure", "detail": "Computed gross exposure: EUR 61,800.00." }
+      ],
+      "questions_for_auditor": [],
+      "evidence_ids": ["ev-101", "ev-102", "ev-103", "ev-104", "ev-201", "ev-202", "ev-203"]
+    },
+    {
+      "investigation_id": "inv-5521",
+      "engagement_id": "eng-8841",
+      "objective": "Determine whether Q4 vendor onboarding created undisclosed related-party or segregation-of-duties exposure.",
+      "status": "awaiting_auditor",
+      "hypotheses": [
+        { "hypothesis_id": "h-related-party", "claim": "Vendor VEND-2291 is a related party onboarded without disclosure, creating a conflict-of-interest exposure.", "category": "related_party", "status": "dismissed", "priority": "high", "subject": "VEND-2291", "supporting_evidence_ids": ["ev-101", "ev-102", "ev-103"], "contradicting_evidence_ids": ["ev-104"], "missing_evidence": ["Signed beneficial-owner declaration"], "candidate_exposure": { "amount": "42500.00", "currency": "EUR", "label": "gross" }, "verdict_recommendation": "Self-challenge produced a plausible innocent explanation (no HR-registry linkage) that the supporting evidence alone cannot rule out. Recommend dismissal absent a signed beneficial-owner declaration." },
+        { "hypothesis_id": "h-sod", "claim": "USER-A held create, approve, and pay rights over vendor VEND-3350, breaching the segregation-of-duties policy.", "category": "segregation_of_duties", "status": "submitted", "priority": "high", "subject": "VEND-3350", "supporting_evidence_ids": ["ev-201", "ev-202", "ev-203"], "contradicting_evidence_ids": [], "missing_evidence": [], "candidate_exposure": { "amount": "61800.00", "currency": "EUR", "label": "gross" }, "verdict_recommendation": "Three independent records (creation, posting, policy text) corroborate a direct control breach with no counter-evidence found. Recommend admission for CONFIRMED review." },
+        { "hypothesis_id": "h-duplicate", "claim": "Invoice INV-88213 to VEND-1180 was posted twice across separate batches, overstating expense.", "category": "duplicate_payment", "status": "awaiting_auditor", "priority": "medium", "subject": "VEND-1180", "supporting_evidence_ids": ["ev-301", "ev-302"], "contradicting_evidence_ids": [], "missing_evidence": ["Bank statement confirming single vs. double disbursement"], "candidate_exposure": { "amount": "18400.00", "currency": "EUR", "label": "potential overstatement" }, "verdict_recommendation": null },
+        { "hypothesis_id": "h-travel", "claim": "Executive travel reimbursements exceeded the policy ceiling without a secondary approver.", "category": "expense_authorization", "status": "insufficient", "priority": "low", "subject": "Executive travel", "supporting_evidence_ids": ["ev-401"], "contradicting_evidence_ids": [], "missing_evidence": ["Approval workflow log", "Policy ceiling reference table"], "candidate_exposure": null, "verdict_recommendation": "Only one weak record found; dossier lacks the approval workflow log needed to test this claim further." }
+      ],
+      "completed_actions": [
+        { "tool_name": "search_dossier", "structured_result": "3 records found linking USER-C to VEND-2291 creation, approval, and first posting.", "evidence_ids": ["ev-101", "ev-102", "ev-103"], "calculation": null, "errors": [], "timestamp": "2026-07-18T09:01:12Z" },
+        { "tool_name": "cross_reference_hr_registry", "structured_result": "HR filing shows USER-C reports to CFO; no family or shareholder linkage recorded against VEND-2291's registered owner.", "evidence_ids": ["ev-104"], "calculation": null, "errors": [], "timestamp": "2026-07-18T09:02:30Z" },
+        { "tool_name": "compute_exposure", "structured_result": "Gross posted exposure for VEND-2291 across Q4: EUR 42,500.00.", "evidence_ids": ["ev-103"], "calculation": { "expression": "sum(posting.amount) WHERE vendor_id = 'VEND-2291'", "result": "42500.00", "sql": "SELECT SUM(amount) FROM postings WHERE vendor_id = 'VEND-2291'" }, "errors": [], "timestamp": "2026-07-18T09:02:41Z" },
+        { "tool_name": "search_dossier", "structured_result": "Access-matrix and ledger rows confirm USER-A as sole actor across create, approve, and pay for VEND-3350.", "evidence_ids": ["ev-201", "ev-202", "ev-203"], "calculation": null, "errors": [], "timestamp": "2026-07-18T09:03:15Z" },
+        { "tool_name": "compute_exposure", "structured_result": "Gross posted exposure for VEND-3350 invoice INV-88190: EUR 61,800.00.", "evidence_ids": ["ev-202"], "calculation": { "expression": "sum(posting.amount) WHERE invoice_no = 'INV-88190'", "result": "61800.00", "sql": "SELECT SUM(amount) FROM postings WHERE invoice_no = 'INV-88190'" }, "errors": [], "timestamp": "2026-07-18T09:03:22Z" },
+        { "tool_name": "search_dossier", "structured_result": "Two postings of INV-88213 found under the same vendor and amount in separate batches (A, B).", "evidence_ids": ["ev-301", "ev-302"], "calculation": null, "errors": [], "timestamp": "2026-07-18T09:04:40Z" },
+        { "tool_name": "compute_exposure", "structured_result": "Potential double-count if both batches disbursed: EUR 18,400.00.", "evidence_ids": ["ev-301", "ev-302"], "calculation": { "expression": "count(invoice_no) GROUP BY invoice_no HAVING count > 1", "result": "18400.00", "sql": "SELECT amount FROM postings WHERE invoice_no = 'INV-88213' GROUP BY batch" }, "errors": [], "timestamp": "2026-07-18T09:04:52Z" },
+        { "tool_name": "search_dossier", "structured_result": "Only one expense-report row retrieved for executive travel; approval workflow log not present in dossier.", "evidence_ids": ["ev-401"], "calculation": null, "errors": ["approval_workflow_log: source not found in dossier"], "timestamp": "2026-07-18T09:05:30Z" }
+      ],
+      "timeline": [
+        { "kind": "hypothesis_created", "at": "2026-07-18T09:00:04Z", "hypothesis_id": "h-related-party", "detail": "Proposed from vendor master anomaly scan (related_party_flag blank on high-value vendor)." },
+        { "kind": "hypothesis_created", "at": "2026-07-18T09:00:05Z", "hypothesis_id": "h-sod", "detail": "Proposed from access-rights cross-reference (single user holds 3 conflicting roles)." },
+        { "kind": "hypothesis_created", "at": "2026-07-18T09:00:06Z", "hypothesis_id": "h-duplicate", "detail": "Proposed from ledger fuzzy-match on (vendor, amount, invoice_no) pairs." },
+        { "kind": "hypothesis_created", "at": "2026-07-18T09:00:07Z", "hypothesis_id": "h-travel", "detail": "Proposed from expense report threshold scan." },
+        { "kind": "tool_selected", "at": "2026-07-18T09:01:02Z", "hypothesis_id": "h-related-party", "tool_name": "search_dossier", "detail": "Highest-priority open hypothesis selected for investigation." },
+        { "kind": "tool_result", "at": "2026-07-18T09:01:12Z", "hypothesis_id": "h-related-party", "tool_name": "search_dossier", "detail": "Master-change row, onboarding-form gap, and first posting all retrieved." },
+        { "kind": "tool_selected", "at": "2026-07-18T09:02:18Z", "hypothesis_id": "h-related-party", "tool_name": "cross_reference_hr_registry", "detail": "Self-challenge: attempting to find an innocent explanation before proceeding." },
+        { "kind": "counter_evidence", "at": "2026-07-18T09:02:30Z", "hypothesis_id": "h-related-party", "tool_name": "cross_reference_hr_registry", "detail": "HR registry found no family or ownership linkage between USER-C and VEND-2291 — weakens the related-party claim." },
+        { "kind": "tool_result", "at": "2026-07-18T09:02:41Z", "hypothesis_id": "h-related-party", "tool_name": "compute_exposure", "detail": "Computed gross exposure ahead of verdict: EUR 42,500.00." },
+        { "kind": "hypothesis_resolved", "at": "2026-07-18T09:02:55Z", "hypothesis_id": "h-related-party", "verdict": "dismissed", "detail": "Dismissed: counter-evidence outweighs support absent a signed declaration." },
+        { "kind": "tool_selected", "at": "2026-07-18T09:03:05Z", "hypothesis_id": "h-sod", "tool_name": "search_dossier", "detail": "Second-priority hypothesis picked up: SoD override on VEND-3350." },
+        { "kind": "tool_result", "at": "2026-07-18T09:03:15Z", "hypothesis_id": "h-sod", "tool_name": "search_dossier", "detail": "Confirmed single-user control across create, approve, pay — policy explicitly requires 3 distinct users above EUR 10,000." },
+        { "kind": "tool_result", "at": "2026-07-18T09:03:22Z", "hypothesis_id": "h-sod", "tool_name": "compute_exposure", "detail": "Computed gross exposure: EUR 61,800.00." },
+        { "kind": "hypothesis_resolved", "at": "2026-07-18T09:03:30Z", "hypothesis_id": "h-sod", "verdict": "submitted", "detail": "Submitted for admission: no counter-evidence surfaced across two independent checks." },
+        { "kind": "tool_selected", "at": "2026-07-18T09:04:20Z", "hypothesis_id": "h-duplicate", "tool_name": "search_dossier", "detail": "Third hypothesis picked up: possible duplicate posting on INV-88213." },
+        { "kind": "tool_result", "at": "2026-07-18T09:04:40Z", "hypothesis_id": "h-duplicate", "tool_name": "search_dossier", "detail": "Two postings of the same invoice number found in separate batches." },
+        { "kind": "tool_result", "at": "2026-07-18T09:04:52Z", "hypothesis_id": "h-duplicate", "tool_name": "compute_exposure", "detail": "Estimated overstatement if both disbursed: EUR 18,400.00." },
+        { "kind": "hypothesis_resolved", "at": "2026-07-18T09:05:00Z", "hypothesis_id": "h-duplicate", "verdict": "awaiting_auditor", "detail": "Ledger cannot distinguish a re-post correction from a genuine double disbursement — routed to auditor for bank-statement judgment." },
+        { "kind": "tool_selected", "at": "2026-07-18T09:05:20Z", "hypothesis_id": "h-travel", "tool_name": "search_dossier", "detail": "Fourth hypothesis picked up: executive travel authorization." },
+        { "kind": "tool_result", "at": "2026-07-18T09:05:30Z", "hypothesis_id": "h-travel", "tool_name": "search_dossier", "detail": "Approval workflow log absent from dossier; cannot test further." },
+        { "kind": "hypothesis_resolved", "at": "2026-07-18T09:05:38Z", "hypothesis_id": "h-travel", "verdict": "insufficient", "detail": "Insufficient dossier coverage to test this claim; flagged as a missing-evidence gap rather than dismissed." },
+        { "kind": "stopped", "at": "2026-07-18T09:05:40Z", "detail": "Agent stopped: 1 hypothesis awaiting auditor judgment, 1 submitted, 1 dismissed, 1 insufficient." }
+      ],
+      "questions_for_auditor": [
+        "VEND-1180 / INV-88213: was the second posting a genuine re-disbursement, or a correcting re-post of the same payment?",
+        "Should the related-party dismissal on VEND-2291 stand, or is a signed beneficial-owner declaration still being chased outside the dossier?"
+      ],
+      "evidence_ids": ["ev-101", "ev-102", "ev-103", "ev-104", "ev-201", "ev-202", "ev-203", "ev-301", "ev-302", "ev-401"]
+    }
+  ]
+}
