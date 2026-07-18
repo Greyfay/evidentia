@@ -6,10 +6,12 @@ bundle, jump to an exact evidence pointer, and record a human review decision.
 
 from __future__ import annotations
 
+import logging
 import os
 import shutil
 import stat
 import tempfile
+import time
 import zipfile
 from pathlib import Path
 
@@ -23,6 +25,7 @@ except ImportError:
 from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from starlette.concurrency import run_in_threadpool
 
 from audit_compiler.agent.context import AgentContext
 from audit_compiler.agent.store import get_store
@@ -38,6 +41,7 @@ app.include_router(investigations_router)
 
 _STATE: dict[str, dict] = {"bundle": None}
 _MAX_UPLOAD_BYTES = 200 * 1024 * 1024  # 200 MiB: generous for a dossier, bounded against abuse
+_LOGGER = logging.getLogger(__name__)
 
 
 class CompileRequest(BaseModel):
@@ -180,7 +184,10 @@ async def upload_engagement(file: UploadFile) -> dict:
         persist_dir = Path(tempfile.mkdtemp(prefix="evidentia-dossier-"))
         shutil.copytree(dossier_root, persist_dir, dirs_exist_ok=True)
 
-    bundle = _compile(persist_dir)
+    started_at = time.monotonic()
+    _LOGGER.info("compiling uploaded dossier: bytes=%d", size)
+    bundle = await run_in_threadpool(_compile, persist_dir)
+    _LOGGER.info("compiled uploaded dossier in %.2fs", time.monotonic() - started_at)
     ctx = AgentContext.from_compiled_run(
         persist_dir / ".admissible" / "audit.duckdb",
         bundle["engagement"]["engagement_id"],

@@ -86,7 +86,12 @@ class OpenAIInterpreter:
         api_key = os.environ.get("OPENAI_API_KEY")
         if not api_key:
             raise RuntimeError("OPENAI_API_KEY is not set")
-        self._client = OpenAI(api_key=api_key)
+        timeout = min(max(float(os.environ.get("OPENAI_TIMEOUT_SECONDS", "20")), 1.0), 120.0)
+        self._client = OpenAI(
+            api_key=api_key,
+            timeout=timeout,
+            max_retries=1,
+        )
 
     def _parse(self, *, system: str, user: str, schema: type[BaseModel]) -> BaseModel | None:
         try:

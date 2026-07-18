@@ -5,7 +5,7 @@ import { useInvestigation } from "@/lib/investigation-context";
 import { formatBytes } from "@/lib/format";
 
 export default function UploadZone() {
-  const { engagement, uploading, uploadDossier, starting, startInvestigation, usingFallback, investigation } =
+  const { engagement, uploading, uploadDossier, starting, startInvestigation, usingFallback, investigation, error } =
     useInvestigation();
   const [dragging, setDragging] = useState(false);
   const [objective, setObjective] = useState(
@@ -33,6 +33,15 @@ export default function UploadZone() {
           </span>
         )}
       </div>
+
+      {error && (
+        <div
+          className="mb-3 rounded-sm border px-3 py-2 text-xs"
+          style={{ borderColor: "var(--brick)", color: "var(--brick)" }}
+        >
+          {error}. The bundled demo remains available; check that the API is running on port 8000.
+        </div>
+      )}
 
       {!engagement ? (
         <div

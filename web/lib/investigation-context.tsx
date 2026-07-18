@@ -119,7 +119,8 @@ export function InvestigationProvider({ children }: { children: React.ReactNode 
       const result = await api.uploadEngagement(file);
       setEngagement(result.engagement);
       setUsingFallback(false);
-    } catch {
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Dossier upload failed");
       setEngagement({ ...fixture.engagement, name: `${file.name} (demo fixture — API unreachable)` });
       setUsingFallback(true);
     } finally {
@@ -137,7 +138,8 @@ export function InvestigationProvider({ children }: { children: React.ReactNode 
         const inv = await api.createInvestigation(engagement.engagement_id, objective);
         setInvestigation(inv);
         pickDefaultSelection(inv);
-      } catch {
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : "Investigation could not start");
         setUsingFallback(true);
         stepIndexRef.current = 0;
         const seed: Investigation = { ...fixture.steps[0], objective: objective || fixture.steps[0].objective };

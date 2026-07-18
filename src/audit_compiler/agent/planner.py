@@ -161,7 +161,12 @@ class OpenAIPlanner:
     def __init__(self, api_key: str, model: str = "gpt-4o-mini") -> None:
         from openai import OpenAI
 
-        self._client = OpenAI(api_key=api_key)
+        timeout = min(max(float(os.environ.get("OPENAI_TIMEOUT_SECONDS", "20")), 1.0), 120.0)
+        self._client = OpenAI(
+            api_key=api_key,
+            timeout=timeout,
+            max_retries=1,
+        )
         self._model = model
 
     def _parse(self, instruction: str, payload: dict, schema: type[_Schema]):
