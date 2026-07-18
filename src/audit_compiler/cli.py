@@ -6,9 +6,8 @@ import argparse
 import json
 from pathlib import Path
 
-from audit_compiler.compiler import compile_dossier
+from audit_compiler.compiler import CompileRequest, CompilerService
 from audit_compiler.inventory import inventory_dossier
-from audit_compiler.pipeline import compile_engagement
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -56,7 +55,8 @@ def main(argv: list[str] | None = None) -> None:
         serialized = manifest.model_dump_json(indent=2) + "\n"
         _emit(serialized, args.output)
     elif args.command == "compile":
-        bundle = compile_engagement(args.dossier, name=args.name)
+        bundle = CompilerService().compile(CompileRequest(dossier=args.dossier, name=args.name))
+        bundle = bundle.model_dump(mode="json")
         serialized = json.dumps(bundle, indent=2, ensure_ascii=False) + "\n"
         _emit(serialized, args.cases_out or args.output)
         counts = bundle["engagement"]["counts"]
@@ -66,7 +66,9 @@ def main(argv: list[str] | None = None) -> None:
             f"{counts['dismissed']} dismissed."
         )
     elif args.command == "store":
-        report = compile_dossier(args.dossier, database=args.database)
+        report = CompilerService().compile_report(
+            CompileRequest(dossier=args.dossier, database=args.database)
+        )
         _emit(report.model_dump_json(indent=2) + "\n", args.output)
         if report.errors:
             raise SystemExit(1)

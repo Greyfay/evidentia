@@ -174,6 +174,31 @@ CREATE TABLE IF NOT EXISTS xlsx_normalized_records (
     values_json VARCHAR NOT NULL,
     UNIQUE (sheet_id, row_number)
 );
+
+CREATE TABLE IF NOT EXISTS audit_runs (
+    engagement_id VARCHAR NOT NULL,
+    run_id VARCHAR NOT NULL,
+    dossier_root VARCHAR NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL,
+    PRIMARY KEY (engagement_id, run_id)
+);
+
+CREATE TABLE IF NOT EXISTS audit_ir_tables (
+    engagement_id VARCHAR NOT NULL,
+    run_id VARCHAR NOT NULL,
+    table_ordinal BIGINT NOT NULL,
+    table_name VARCHAR NOT NULL,
+    source_path VARCHAR NOT NULL,
+    file_sha256 VARCHAR NOT NULL,
+    source_type VARCHAR NOT NULL,
+    columns_json VARCHAR NOT NULL,
+    rows_json VARCHAR NOT NULL,
+    row_numbers_json VARCHAR NOT NULL,
+    sheet VARCHAR,
+    page_numbers_json VARCHAR NOT NULL,
+    PRIMARY KEY (engagement_id, run_id, table_ordinal),
+    FOREIGN KEY (engagement_id, run_id) REFERENCES audit_runs(engagement_id, run_id)
+);
 """
 
 
@@ -189,6 +214,80 @@ def initialize_schema(connection: duckdb.DuckDBPyConnection) -> None:
     """Create idempotent tables for source, provenance, facts, results, and cases."""
 
     connection.execute(_SCHEMA)
+
+
+class DuckDBAuditStore:
+    """Authoritative engagement/run-scoped store for parsed Audit IR."""
+
+    def __init__(self, database: str | Path = ":memory:") -> None:
+        self.database = str(database)
+
+    def persist_dossier(self, engagement_id: str, run_id: str, dossier) -> None:  # noqa: ANN001
+        connection = connect(self.database)
+        try:
+            connection.execute("BEGIN")
+            connection.execute(
+                "INSERT INTO audit_runs VALUES (?, ?, ?, ?)",
+                [engagement_id, run_id, str(dossier.root), datetime.now(UTC)],
+            )
+            for ordinal, table in enumerate(dossier.tables):
+                connection.execute(
+                    """
+                    INSERT INTO audit_ir_tables VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    [
+                        engagement_id,
+                        run_id,
+                        ordinal,
+                        table.name,
+                        table.source_path,
+                        table.file_sha256,
+                        table.source_type.value,
+                        json.dumps(table.columns, ensure_ascii=False),
+                        json.dumps(table.rows, ensure_ascii=False),
+                        json.dumps(table.row_numbers),
+                        table.sheet,
+                        json.dumps(table.page_numbers),
+                    ],
+                )
+            connection.execute("COMMIT")
+        except Exception:
+            connection.execute("ROLLBACK")
+            raise
+        finally:
+            connection.close()
+
+    def load_dossier(self, engagement_id: str, run_id: str):  # noqa: ANN201
+        from audit_compiler.ir.dossier import LoadedDossier, SourceTable
+        from audit_compiler.models import SourceType
+
+        connection = connect(self.database)
+        try:
+            run = connection.execute(
+                "SELECT dossier_root FROM audit_runs WHERE engagement_id = ? AND run_id = ?",
+                [engagement_id, run_id],
+            ).fetchone()
+            if run is None:
+                raise KeyError(f"unknown audit run: {engagement_id}/{run_id}")
+            rows = connection.execute(
+                """SELECT table_name, source_path, file_sha256, source_type, columns_json,
+                          rows_json, row_numbers_json, sheet, page_numbers_json
+                   FROM audit_ir_tables WHERE engagement_id = ? AND run_id = ?
+                   ORDER BY table_ordinal""",
+                [engagement_id, run_id],
+            ).fetchall()
+        finally:
+            connection.close()
+        tables = tuple(
+            SourceTable(
+                name=row[0], source_path=row[1], file_sha256=row[2],
+                source_type=SourceType(row[3]), columns=tuple(json.loads(row[4])),
+                rows=tuple(json.loads(row[5])), row_numbers=tuple(json.loads(row[6])),
+                sheet=row[7], page_numbers=tuple(json.loads(row[8])),
+            )
+            for row in rows
+        )
+        return LoadedDossier(root=Path(run[0]), tables=tables, warnings=())
 
 
 def store_source_files(

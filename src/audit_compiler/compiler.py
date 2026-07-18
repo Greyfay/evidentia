@@ -5,6 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
+from uuid import uuid4
 
 from pydantic import Field
 
@@ -22,7 +23,12 @@ from audit_compiler.duckdb_store import (
     store_xlsx_workbook,
 )
 from audit_compiler.inventory import SourceFile, inventory_dossier
-from audit_compiler.models import ImmutableModel
+from audit_compiler.models import (
+    CaseBundle,
+    EngagementSummary,
+    ImmutableModel,
+    SourceCompilation,
+)
 
 
 class ParsingStatus(StrEnum):
@@ -395,3 +401,109 @@ def compile_dossier(
         warnings=tuple(warnings),
         errors=tuple(errors),
     )
+
+
+class CompileRequest(ImmutableModel):
+    dossier: Path
+    engagement_id: str | None = None
+    run_id: str | None = None
+    name: str | None = None
+    database: Path | None = None
+    params: dict[str, object] = Field(default_factory=dict)
+
+
+class CompilerService:
+    """The sole production orchestration boundary for dossier compilation."""
+
+    def compile(self, request: CompileRequest) -> CaseBundle:
+        from audit_compiler.admission import admit
+        from audit_compiler.casebuilder import case_dict
+        from audit_compiler.controls.base import ControlContext
+        from audit_compiler.controls.registry import METHODOLOGY_VERSION, ControlEngine
+        from audit_compiler.duckdb_store import DuckDBAuditStore
+        from audit_compiler.ir.dossier import load_dossier
+
+        root = request.dossier.expanduser().resolve()
+        if not root.is_dir():
+            raise NotADirectoryError(f"dossier path is not a directory: {request.dossier}")
+        engagement_id = request.engagement_id or str(uuid4())
+        run_id = request.run_id or str(uuid4())
+        database = request.database or root / ".admissible" / "audit.duckdb"
+        database.parent.mkdir(parents=True, exist_ok=True)
+
+        # This is the only native parse. Everything downstream reads the persisted AIR.
+        parsed = load_dossier(root)
+        store = DuckDBAuditStore(database)
+        store.persist_dossier(engagement_id, run_id, parsed)
+        dossier = store.load_dossier(engagement_id, run_id)
+        manifest = inventory_dossier(root)
+
+        warned = {path for path, _ in parsed.warnings}
+        rows_by_path: dict[str, int] = {}
+        for table in parsed.tables:
+            rows_by_path[table.source_path] = (
+                rows_by_path.get(table.source_path, 0) + len(table.rows)
+            )
+        sources = tuple(
+            SourceCompilation(
+                path=source.path,
+                type=source.file_type,
+                bytes=source.byte_size,
+                sha256=source.sha256,
+                status=(
+                    "skipped"
+                    if source.file_type in {"xml", "unknown"}
+                    or source.path.endswith(".dtd")
+                    else "warning" if source.path in warned
+                    else "parsed" if source.path in rows_by_path
+                    else "skipped"
+                ),
+                source_rows=rows_by_path.get(source.path, 0),
+                parsed_rows=rows_by_path.get(source.path, 0),
+                warnings=tuple(message for path, message in parsed.warnings if path == source.path),
+            )
+            for source in manifest.files
+            if not source.path.startswith(".admissible/")
+        )
+
+        context = ControlContext(dossier=dossier, params=request.params)
+        cases = tuple(
+            case_dict(
+                finding,
+                admit(finding),
+                engagement_id=engagement_id,
+                run_id=run_id,
+            )
+            for finding in ControlEngine().run(context)
+        )
+        verdicts = [case["verdict"] for case in cases]
+        evidence_count = sum(
+            len(step["evidence"]) for case in cases for step in case["evidence_chain"]
+        ) + sum(len(case["calculation"]["evidence"]) for case in cases)
+        return CaseBundle(
+            engagement=EngagementSummary(
+                engagement_id=engagement_id,
+                run_id=run_id,
+                name=request.name or root.name,
+                dossier_root=root.name,
+                compiled_at=datetime.now(UTC),
+                methodology_version=METHODOLOGY_VERSION,
+                counts={
+                    "source_files": len(sources),
+                    "evidence_records": evidence_count,
+                    "entities": len({table.name for table in dossier.tables}),
+                    "events": sum(len(table.rows) for table in dossier.tables),
+                    "confirmed": verdicts.count("CONFIRMED"),
+                    "human_review": verdicts.count("HUMAN_REVIEW"),
+                    "dismissed": verdicts.count("DISMISSED"),
+                    "rejected": verdicts.count("REJECTED"),
+                },
+                source_files=sources,
+            ),
+            cases=cases,
+        )
+
+    def compile_report(self, request: CompileRequest) -> CompilationReport:
+        """Compatibility report for the deprecated ``store`` CLI command."""
+
+        return compile_dossier(request.dossier, database=request.database)
