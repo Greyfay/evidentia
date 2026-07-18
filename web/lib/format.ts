@@ -55,6 +55,26 @@ export const HYPOTHESIS_PRIORITY_META: Record<HypothesisPriority, { label: strin
   low: { label: "Low" },
 };
 
+// Plain-language verdict the agent is leaning toward, derived from hypothesis
+// state. Keeps reviewer vocabulary consistent across the workspace.
+export const RECOMMENDED_VERDICT: Record<HypothesisStatus, string> = {
+  proposed: "Not yet examined",
+  active: "Under examination",
+  submitted: "Recommends confirming",
+  dismissed: "Recommends dismissing",
+  insufficient: "Evidence insufficient",
+  awaiting_auditor: "Needs your decision",
+};
+
+// snake_case / camelCase tool field → readable label.
+export function humanizeKey(key: string): string {
+  const spaced = key
+    .replace(/_/g, " ")
+    .replace(/([a-z])([A-Z])/g, "$1 $2")
+    .trim();
+  return spaced.charAt(0).toUpperCase() + spaced.slice(1);
+}
+
 export function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   const units = ["KB", "MB", "GB"];

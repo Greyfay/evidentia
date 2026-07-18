@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { useInvestigation } from "@/lib/investigation-context";
+import { useLang } from "@/lib/i18n";
 
 const KIND_STYLE: Record<string, { fill: string; stroke: string; r: number }> = {
   entity: { fill: "var(--ink-3)", stroke: "var(--steel)", r: 20 },
@@ -11,6 +12,7 @@ const KIND_STYLE: Record<string, { fill: string; stroke: string; r: number }> = 
 
 export default function InvestigationGraphView() {
   const { graph } = useInvestigation();
+  const { t } = useLang();
 
   const layout = useMemo(() => {
     const cols = Math.max(1, Math.ceil(Math.sqrt(graph.nodes.length)));
@@ -29,7 +31,7 @@ export default function InvestigationGraphView() {
   if (graph.nodes.length === 0) {
     return (
       <p className="text-xs" style={{ color: "var(--text-2)" }}>
-        No evidence graph available yet.
+        {t("relmap.none")}
       </p>
     );
   }

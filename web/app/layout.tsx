@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { CasesProvider } from "@/lib/data-context";
+import { LanguageProvider } from "@/lib/i18n";
 import SourceViewerDrawer from "@/components/SourceViewerDrawer";
 import AppHeader from "@/components/AppHeader";
 
@@ -18,11 +19,13 @@ export default function RootLayout({
   return (
     <html lang="en" className="h-full">
       <body className="min-h-full flex flex-col antialiased">
-        <CasesProvider>
-          <AppHeader />
-          {children}
-          <SourceViewerDrawer />
-        </CasesProvider>
+        <LanguageProvider>
+          <CasesProvider>
+            <AppHeader />
+            {children}
+            <SourceViewerDrawer />
+          </CasesProvider>
+        </LanguageProvider>
       </body>
     </html>
   );
