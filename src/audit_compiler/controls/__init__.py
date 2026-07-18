@@ -11,6 +11,21 @@ from audit_compiler.controls.base import (
     RuleParameters,
     SupportingEvidence,
 )
+from audit_compiler.controls.capitalization import (
+    AccountClassification,
+    AssetDescriptionRecord,
+    CapitalizationControl,
+    CapitalizationInvoiceRecord,
+    CapitalizationOutcome,
+    CapitalizationParameters,
+    CapitalizationSignal,
+    CapitalizationSignalType,
+    CapitalizationSupportKind,
+    CapitalizationSupportRecord,
+    CapitalizationVocabulary,
+    FixedAssetAdditionRecord,
+    GeneralLedgerPostingRecord,
+)
 from audit_compiler.controls.split_payments import (
     PaymentRecord,
     SplitPaymentControl,
@@ -36,13 +51,26 @@ from audit_compiler.controls.vendor_integrity import (
 )
 
 __all__ = [
+    "AccountClassification",
     "CalculationStep",
     "ApprovalLogRecord",
+    "AssetDescriptionRecord",
+    "CapitalizationControl",
+    "CapitalizationInvoiceRecord",
+    "CapitalizationOutcome",
+    "CapitalizationParameters",
+    "CapitalizationSignal",
+    "CapitalizationSignalType",
+    "CapitalizationSupportKind",
+    "CapitalizationSupportRecord",
+    "CapitalizationVocabulary",
     "Control",
     "ControlContext",
     "ControlOutcome",
     "CounterTestResult",
     "CounterTestStatus",
+    "FixedAssetAdditionRecord",
+    "GeneralLedgerPostingRecord",
     "OutcomeStatus",
     "OutgoingPaymentRecord",
     "PaymentRecord",
