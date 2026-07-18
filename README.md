@@ -4,11 +4,16 @@ Admissible is an evidence-first audit compiler. This foundation slice inventorie
 files, creates immutable provenance-bearing records, normalizes accounting inputs, and
 initializes a local DuckDB evidence store. It also natively compiles GDPdU XML metadata
 and its declared delimited files. It intentionally contains no fraud controls, web
-application, or AI integration.
+application or runtime-required AI integration. AI summarization is isolated behind an optional,
+read-only provider interface.
 
 ## Requirements
 
 - Python 3.11+
+
+The optional AI summarization adapter will require the `openai` Python package during
+integration. It is intentionally not listed in `pyproject.toml` yet; the core provider interface
+and tests do not require the SDK.
 
 ## Setup
 
