@@ -9,10 +9,13 @@ raising. The heavy lifting -- hypothesis generation, tool selection, execution -
 
 from __future__ import annotations
 
+import mimetypes
 import os
 import time
+from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import FileResponse
 from pydantic import BaseModel, ConfigDict
 
 from audit_compiler.agent import tool_registry
@@ -214,7 +217,57 @@ def get_investigation_evidence(investigation_id: str, evidence_id: str) -> dict:
         "kind": resolved.get("source_type"),
         "source": _human_source(resolved),
         "snippet": resolved.get("raw_value"),
+        # The exact coordinate, so the client can pick a viewer and deep-link the file.
+        "source_path": resolved.get("source_path"),
+        "locator": resolved.get("locator"),
+        "file_sha256": resolved.get("file_sha256"),
     }
+
+
+def _serve_source_file(root: Path, source_path: str) -> FileResponse:
+    """Serve the original uploaded file at ``root / source_path``, inline.
+
+    Path-traversal safe: the resolved target must stay under ``root`` (a ``source_path`` that
+    escapes it — or names a file that isn't there — is a 404, never a served file). Served
+    inline with a media type guessed from the extension so the browser renders PDFs and text
+    in place instead of forcing a download.
+    """
+
+    root = root.resolve()
+    target = (root / source_path).resolve()
+    if target != root and root not in target.parents:
+        raise HTTPException(404, "source file not found")
+    if not target.is_file():
+        raise HTTPException(404, "source file not found")
+    media_type = mimetypes.guess_type(target.name)[0] or "application/octet-stream"
+    return FileResponse(
+        target,
+        media_type=media_type,
+        filename=target.name,
+        content_disposition_type="inline",
+    )
+
+
+@router.get("/investigations/{investigation_id}/evidence/{evidence_id}/source-file")
+def get_investigation_source_file(investigation_id: str, evidence_id: str) -> FileResponse:
+    """Serve the exact original file the auditor uploaded that backs one ``ev_...`` id.
+
+    Resolves the evidence id through the engagement's registry to its ``source_path``, then
+    streams that file from the compiled dossier root. 404 if the investigation, its context,
+    the evidence id, or the file on disk is unknown.
+    """
+
+    inv = _get_investigation(investigation_id)
+    ctx = get_store().get_context(inv.engagement_id)
+    if ctx is None:
+        raise HTTPException(404, "engagement context no longer available")
+    resolved = ctx.registry.resolve(evidence_id)
+    if resolved is None:
+        raise HTTPException(404, "evidence not found for this investigation")
+    source_path = resolved.get("source_path")
+    if not source_path:
+        raise HTTPException(404, "evidence has no source file")
+    return _serve_source_file(Path(ctx.dossier.root), source_path)
 
 
 @router.get("/investigations/{investigation_id}/graph")
