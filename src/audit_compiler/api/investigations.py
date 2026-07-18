@@ -16,6 +16,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict
 
 from audit_compiler.agent import tool_registry
+from audit_compiler.agent.answers import build_answer
 from audit_compiler.agent.loop import (
     _VERDICT_TO_STATUS,
     InvestigationLimits,
@@ -173,6 +174,49 @@ def get_timeline(investigation_id: str) -> dict:
     return {"timeline": inv.timeline}
 
 
+def _human_source(resolved: dict) -> str:
+    """Render an evidence pointer as a human-readable source string (file/sheet/row/cell/…)."""
+
+    path = resolved.get("source_path") or "(unknown source)"
+    locator = resolved.get("locator") or {}
+    parts = [path]
+    if locator.get("sheet"):
+        parts.append(f"sheet {locator['sheet']!r}")
+    if locator.get("row") is not None:
+        parts.append(f"row {locator['row']}")
+    if locator.get("cell"):
+        parts.append(f"cell {locator['cell']}")
+    if locator.get("page") is not None:
+        parts.append(f"page {locator['page']}")
+    if locator.get("passage"):
+        parts.append(f"passage {locator['passage']}")
+    return " · ".join(parts)
+
+
+@router.get("/investigations/{investigation_id}/evidence/{evidence_id}")
+def get_investigation_evidence(investigation_id: str, evidence_id: str) -> dict:
+    """Resolve one of the investigation's ``ev_...`` evidence ids to its exact source.
+
+    Resolution goes through the engagement's evidence registry (the same one the tools cite
+    into), so the pointer and snippet are the real source coordinates and raw value — never a
+    fixture. 404 if the investigation, its engagement context, or the id is unknown.
+    """
+
+    inv = _get_investigation(investigation_id)
+    ctx = get_store().get_context(inv.engagement_id)
+    if ctx is None:
+        raise HTTPException(404, "engagement context no longer available")
+    resolved = ctx.registry.resolve(evidence_id)
+    if resolved is None:
+        raise HTTPException(404, "evidence not found for this investigation")
+    return {
+        "evidence_id": evidence_id,
+        "kind": resolved.get("source_type"),
+        "source": _human_source(resolved),
+        "snippet": resolved.get("raw_value"),
+    }
+
+
 @router.get("/investigations/{investigation_id}/graph")
 def get_graph(investigation_id: str) -> dict:
     inv = _get_investigation(investigation_id)
@@ -258,8 +302,33 @@ def challenge_hypothesis(
 
 @router.post("/investigations/{investigation_id}/messages")
 def add_message(investigation_id: str, request: MessageRequest) -> dict:
+    """Record an auditor question and answer it, grounded strictly in the investigation.
+
+    The answer is derived from the investigation's real hypotheses, tool observations,
+    evidence ids, and verdicts — it never invents a number, evidence id, or verdict. When an
+    OpenAI planner is configured it phrases the answer; otherwise a deterministic,
+    state-derived answer is produced. Any evidence id cited that is not already in the
+    investigation is stripped. Never raises to the client: any failure degrades to the
+    deterministic answer.
+    """
+
     inv = _get_investigation(investigation_id)
-    inv.questions_for_auditor = [*inv.questions_for_auditor, request.message]
-    _event(inv, "auditor_message", message=request.message)
+    question = request.message
+    inv.questions_for_auditor = [*inv.questions_for_auditor, question]
+    _event(inv, "auditor_message", detail=question)
+
+    try:
+        answer, evidence_ids = build_answer(inv, question, get_planner())
+    except Exception:  # noqa: BLE001 - answering must never break the endpoint
+        answer, evidence_ids = "", []
+    if not answer:
+        # build_answer already degrades internally, but guarantee a non-empty reply.
+        answer = (
+            f"The investigation into \"{inv.objective}\" is currently {inv.status.value}; "
+            "no further grounded detail is available yet."
+        )
+        evidence_ids = []
+
+    _event(inv, "assistant_reply", detail=answer, evidence_ids=evidence_ids)
     get_store().save(inv)
     return _dump(inv)
