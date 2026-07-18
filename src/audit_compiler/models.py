@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from enum import StrEnum
 from hashlib import sha256
@@ -34,6 +34,19 @@ class ControlStatus(StrEnum):
     CANDIDATE = "candidate"
     CLEARED = "cleared"
     INCONCLUSIVE = "inconclusive"
+
+
+class DataLocale(StrEnum):
+    """The explicit convention used for source amounts and dates."""
+
+    DE = "de"
+    EN = "en"
+
+
+class RunStatus(StrEnum):
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
 
 
 Sha256 = Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
@@ -82,6 +95,36 @@ class EvidenceRef(ImmutableModel):
         if value.startswith(("/", "\\")) or ".." in value.split("/"):
             raise ValueError("source_path must be a safe dossier-relative path")
         return value
+
+
+class EngagementIdentity(ImmutableModel):
+    """Stable identity and normalization policy for a compiled dossier."""
+
+    engagement_id: UUID
+    name: str = Field(min_length=1)
+    dossier_root: str = Field(min_length=1)
+    locale: DataLocale
+
+
+class CompilationRun(ImmutableModel):
+    """One isolated attempt to compile an engagement."""
+
+    run_id: UUID = Field(default_factory=uuid4)
+    engagement_id: UUID
+    status: RunStatus = RunStatus.RUNNING
+    started_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    completed_at: datetime | None = None
+    error: str | None = None
+
+    @model_validator(mode="after")
+    def completion_matches_status(self) -> CompilationRun:
+        if self.status is RunStatus.RUNNING and self.completed_at is not None:
+            raise ValueError("a running compilation cannot have completed_at")
+        if self.status is not RunStatus.RUNNING and self.completed_at is None:
+            raise ValueError("a finished compilation requires completed_at")
+        if self.status is RunStatus.FAILED and not self.error:
+            raise ValueError("a failed compilation requires an error")
+        return self
 
 
 class FinancialEvent(ImmutableModel):

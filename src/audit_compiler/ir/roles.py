@@ -9,11 +9,16 @@ on an unseen dossier whose files are renamed, reordered, or translated.
 from __future__ import annotations
 
 import re
+from collections.abc import Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from datetime import date
 from decimal import Decimal
 
 from audit_compiler.ir.dossier import LoadedDossier, SourceTable
-from audit_compiler.normalization import parse_date, parse_decimal
+from audit_compiler.normalization import Locale, parse_date, parse_decimal
+
+_ACTIVE_LOCALE: ContextVar[Locale] = ContextVar("audit_compiler_locale", default="de")
 
 # Concept -> candidate header names (compared case-insensitively, punctuation-loose).
 COLUMN_SYNONYMS: dict[str, set[str]] = {
@@ -75,24 +80,33 @@ def find_tables(dossier: LoadedDossier, concepts: set[str]) -> list[SourceTable]
     return sorted(matches, key=lambda t: len(t.rows), reverse=True)
 
 
-def money(value: str) -> Decimal | None:
-    """Parse a German-or-English money string to Decimal, or None if not a number."""
+@contextmanager
+def using_locale(locale: Locale) -> Iterator[None]:
+    """Scope legacy control helpers to one explicit, concurrency-safe run locale."""
 
-    for locale in ("de", "en"):
-        try:
-            return parse_decimal(value, locale=locale)
-        except (ValueError, TypeError):
-            continue
-    return None
+    token = _ACTIVE_LOCALE.set(locale)
+    try:
+        yield
+    finally:
+        _ACTIVE_LOCALE.reset(token)
 
 
-def as_date(value: str) -> date | None:
-    for locale in ("de", "en"):
-        try:
-            return parse_date(value, locale=locale)
-        except (ValueError, TypeError):
-            continue
-    return None
+def money(value: str, *, locale: Locale | None = None) -> Decimal | None:
+    """Parse money using the explicit argument or active compilation locale."""
+
+    try:
+        return parse_decimal(value, locale=locale or _ACTIVE_LOCALE.get())
+    except (ValueError, TypeError):
+        return None
+
+
+def as_date(value: str, *, locale: Locale | None = None) -> date | None:
+    """Parse a date using the explicit argument or active compilation locale."""
+
+    try:
+        return parse_date(value, locale=locale or _ACTIVE_LOCALE.get())
+    except (ValueError, TypeError):
+        return None
 
 
 _NUM_BEFORE_EUR = re.compile(r"(\d[\d.\s]*\d|\d)\s*(?:EUR|€)", re.IGNORECASE)
