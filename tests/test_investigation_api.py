@@ -146,10 +146,10 @@ async def test_uploads_are_isolated_and_each_source_is_parsed_once(
     calls = 0
     original = dossier_module.load_dossier
 
-    def counted(path: Path):
+    def counted(path: Path, **kwargs):
         nonlocal calls
         calls += 1
-        return original(path)
+        return original(path, **kwargs)
 
     monkeypatch.setattr(dossier_module, "load_dossier", counted)
     first = await client.post(

@@ -12,7 +12,7 @@ import duckdb
 from audit_compiler.adapters.gdpdu import ParsedTable
 from audit_compiler.adapters.xlsx import XlsxWorkbook
 from audit_compiler.inventory import SourceFile
-from audit_compiler.models import EvidenceRef
+from audit_compiler.models import DataLocale, EvidenceRef, FinancialEvent
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS source_files (
@@ -179,6 +179,7 @@ CREATE TABLE IF NOT EXISTS audit_runs (
     engagement_id VARCHAR NOT NULL,
     run_id VARCHAR NOT NULL,
     dossier_root VARCHAR NOT NULL,
+    locale VARCHAR NOT NULL,
     created_at TIMESTAMPTZ NOT NULL,
     PRIMARY KEY (engagement_id, run_id)
 );
@@ -199,6 +200,24 @@ CREATE TABLE IF NOT EXISTS audit_ir_tables (
     PRIMARY KEY (engagement_id, run_id, table_ordinal),
     FOREIGN KEY (engagement_id, run_id) REFERENCES audit_runs(engagement_id, run_id)
 );
+
+CREATE TABLE IF NOT EXISTS audit_ir_events (
+    engagement_id VARCHAR NOT NULL,
+    run_id VARCHAR NOT NULL,
+    event_id UUID NOT NULL,
+    event_json VARCHAR NOT NULL,
+    PRIMARY KEY (engagement_id, run_id, event_id),
+    FOREIGN KEY (engagement_id, run_id) REFERENCES audit_runs(engagement_id, run_id)
+);
+
+CREATE TABLE IF NOT EXISTS audit_ir_event_batches (
+    engagement_id VARCHAR NOT NULL,
+    run_id VARCHAR NOT NULL,
+    batch_ordinal BIGINT NOT NULL,
+    events_json VARCHAR NOT NULL,
+    PRIMARY KEY (engagement_id, run_id, batch_ordinal),
+    FOREIGN KEY (engagement_id, run_id) REFERENCES audit_runs(engagement_id, run_id)
+);
 """
 
 
@@ -214,6 +233,9 @@ def initialize_schema(connection: duckdb.DuckDBPyConnection) -> None:
     """Create idempotent tables for source, provenance, facts, results, and cases."""
 
     connection.execute(_SCHEMA)
+    connection.execute(
+        "ALTER TABLE audit_runs ADD COLUMN IF NOT EXISTS locale VARCHAR DEFAULT 'de'"
+    )
 
 
 class DuckDBAuditStore:
@@ -222,33 +244,79 @@ class DuckDBAuditStore:
     def __init__(self, database: str | Path = ":memory:") -> None:
         self.database = str(database)
 
-    def persist_dossier(self, engagement_id: str, run_id: str, dossier) -> None:  # noqa: ANN001
+    def persist_dossier(
+        self,
+        engagement_id: str,
+        run_id: str,
+        dossier,  # noqa: ANN001
+        *,
+        events: tuple[FinancialEvent, ...] = (),
+    ) -> None:
         connection = connect(self.database)
         try:
             connection.execute("BEGIN")
             connection.execute(
-                "INSERT INTO audit_runs VALUES (?, ?, ?, ?)",
-                [engagement_id, run_id, str(dossier.root), datetime.now(UTC)],
+                """
+                INSERT INTO audit_runs
+                    (engagement_id, run_id, dossier_root, locale, created_at)
+                VALUES (?, ?, ?, ?, ?)
+                """,
+                [
+                    engagement_id,
+                    run_id,
+                    str(dossier.root),
+                    dossier.locale.value,
+                    datetime.now(UTC),
+                ],
             )
-            for ordinal, table in enumerate(dossier.tables):
-                connection.execute(
+            table_rows = [
+                [
+                    engagement_id,
+                    run_id,
+                    ordinal,
+                    table.name,
+                    table.source_path,
+                    table.file_sha256,
+                    table.source_type.value,
+                    json.dumps(table.columns, ensure_ascii=False),
+                    json.dumps(table.rows, ensure_ascii=False),
+                    json.dumps(table.row_numbers),
+                    table.sheet,
+                    json.dumps(table.page_numbers),
+                ]
+                for ordinal, table in enumerate(dossier.tables)
+            ]
+            if table_rows:
+                connection.executemany(
                     """
-                    INSERT INTO audit_ir_tables VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    INSERT INTO audit_ir_tables
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
-                    [
-                        engagement_id,
-                        run_id,
-                        ordinal,
-                        table.name,
-                        table.source_path,
-                        table.file_sha256,
-                        table.source_type.value,
-                        json.dumps(table.columns, ensure_ascii=False),
-                        json.dumps(table.rows, ensure_ascii=False),
-                        json.dumps(table.row_numbers),
-                        table.sheet,
-                        json.dumps(table.page_numbers),
-                    ],
+                    table_rows,
+                )
+            event_ids = [event.event_id for event in events]
+            if len(event_ids) != len(set(event_ids)):
+                raise ValueError("canonical event IDs must be unique within a run")
+            event_batches = [
+                [
+                    engagement_id,
+                    run_id,
+                    offset // 1000,
+                    json.dumps(
+                        [
+                            event.model_dump(mode="json", exclude_none=False)
+                            for event in events[offset : offset + 1000]
+                        ],
+                        ensure_ascii=False,
+                        separators=(",", ":"),
+                    ),
+                ]
+                for offset in range(0, len(events), 1000)
+            ]
+            if event_batches:
+                connection.executemany(
+                    "INSERT INTO audit_ir_event_batches VALUES (?, ?, ?, ?)",
+                    event_batches,
                 )
             connection.execute("COMMIT")
         except Exception:
@@ -264,7 +332,10 @@ class DuckDBAuditStore:
         connection = connect(self.database)
         try:
             run = connection.execute(
-                "SELECT dossier_root FROM audit_runs WHERE engagement_id = ? AND run_id = ?",
+                """
+                SELECT dossier_root, locale FROM audit_runs
+                WHERE engagement_id = ? AND run_id = ?
+                """,
                 [engagement_id, run_id],
             ).fetchone()
             if run is None:
@@ -287,7 +358,45 @@ class DuckDBAuditStore:
             )
             for row in rows
         )
-        return LoadedDossier(root=Path(run[0]), tables=tables, warnings=())
+        return LoadedDossier(
+            root=Path(run[0]),
+            locale=DataLocale(run[1]),
+            tables=tables,
+            warnings=(),
+        )
+
+    def load_events(
+        self, engagement_id: str, run_id: str
+    ) -> tuple[FinancialEvent, ...]:
+        """Load canonical events isolated to one engagement run."""
+
+        connection = connect(self.database)
+        try:
+            batches = connection.execute(
+                """
+                SELECT events_json FROM audit_ir_event_batches
+                WHERE engagement_id = ? AND run_id = ?
+                ORDER BY batch_ordinal
+                """,
+                [engagement_id, run_id],
+            ).fetchall()
+            rows = connection.execute(
+                """
+                SELECT event_json FROM audit_ir_events
+                WHERE engagement_id = ? AND run_id = ?
+                ORDER BY event_id
+                """,
+                [engagement_id, run_id],
+            ).fetchall()
+        finally:
+            connection.close()
+        if batches:
+            return tuple(
+                FinancialEvent.model_validate(event)
+                for batch in batches
+                for event in json.loads(batch[0])
+            )
+        return tuple(FinancialEvent.model_validate_json(row[0]) for row in rows)
 
 
 def store_source_files(

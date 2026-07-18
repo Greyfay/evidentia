@@ -6,10 +6,12 @@ bundle, jump to an exact evidence pointer, and record a human review decision.
 
 from __future__ import annotations
 
+import logging
 import os
 import shutil
 import stat
 import tempfile
+import time
 import zipfile
 from pathlib import Path
 
@@ -42,6 +44,7 @@ app.include_router(investigations_router)
 
 _STATE: dict[str, dict] = {"bundle": None}
 _MAX_UPLOAD_BYTES = 200 * 1024 * 1024  # 200 MiB: generous for a dossier, bounded against abuse
+_LOGGER = logging.getLogger(__name__)
 
 
 class CompileRequest(BaseModel):
@@ -214,7 +217,10 @@ async def upload_engagement(request: Request) -> dict:
                         upload, persist_dir / _safe_dossier_name(upload.filename), budget
                     )
 
+        started_at = time.monotonic()
+        _LOGGER.info("compiling uploaded dossier: bytes=%d", budget[0])
         bundle = _compile(persist_dir)
+        _LOGGER.info("compiled uploaded dossier in %.2fs", time.monotonic() - started_at)
         ctx = AgentContext.from_compiled_run(
             persist_dir / ".admissible" / "audit.duckdb",
             bundle["engagement"]["engagement_id"],

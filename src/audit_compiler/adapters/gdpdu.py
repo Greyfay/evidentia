@@ -365,6 +365,69 @@ class _TrackedLines:
         return raw_row
 
 
+def parse_delimited_values(
+    path: Path,
+    definition: GdpduTableDefinition,
+    *,
+    dossier_root: Path,
+) -> tuple[tuple[dict[str, str], ...], tuple[int, ...], str]:
+    """Parse validated GDPdU rows without eagerly constructing cell evidence models.
+
+    Canonical ``SourceTable`` consumers create content-addressed evidence on demand.
+    This keeps the native delimiter, encoding, row-count, and field-count checks while
+    avoiding hundreds of thousands of short-lived Pydantic objects for large ledgers.
+    """
+
+    path = path.expanduser().resolve()
+    root = dossier_root.expanduser().resolve()
+    source_path = _source_path(path, root)
+    if source_path != definition.source_path:
+        raise ValueError(f"metadata source path does not match file: {definition.source_path!r}")
+    raw_bytes = path.read_bytes()
+    text, _ = _decode_text(raw_bytes, definition.encoding)
+    file_sha256 = sha256_file(path)
+    columns = tuple(column.name for column in definition.columns)
+    rows: list[dict[str, str]] = []
+    row_numbers: list[int] = []
+    previous_line_number = 0
+    tracked_lines = _TrackedLines(text)
+    reader = csv.reader(tracked_lines, delimiter=definition.delimiter, strict=True)
+    while True:
+        try:
+            raw_values = next(reader)
+        except StopIteration:
+            break
+        except csv.Error as exc:
+            raw_row = tracked_lines.consume_record()
+            row_number = previous_line_number + 1
+            raise DelimitedParseError(
+                f"{source_path} row {row_number} is not valid delimited text: {exc}",
+                source_path=source_path,
+                source_sha256=file_sha256,
+                row_number=row_number,
+                raw_row=raw_row,
+                source_row_count=len(rows) + 1,
+                parsed_row_count=len(rows),
+            ) from exc
+        row_number = previous_line_number + 1
+        previous_line_number = reader.line_num
+        raw_row = tracked_lines.consume_record()
+        if len(raw_values) != len(columns):
+            raise DelimitedParseError(
+                f"{source_path} row {row_number} has {len(raw_values)} fields; "
+                f"GDPdU metadata defines {len(columns)}",
+                source_path=source_path,
+                source_sha256=file_sha256,
+                row_number=row_number,
+                raw_row=raw_row,
+                source_row_count=len(rows) + 1,
+                parsed_row_count=len(rows),
+            )
+        rows.append(dict(zip(columns, raw_values, strict=True)))
+        row_numbers.append(row_number)
+    return tuple(rows), tuple(row_numbers), file_sha256
+
+
 def parse_delimited_table(
     path: Path, definition: GdpduTableDefinition, *, dossier_root: Path
 ) -> ParsedTable:

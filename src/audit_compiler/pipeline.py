@@ -9,6 +9,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from audit_compiler.compiler import CompileRequest, CompilerService
+from audit_compiler.models import DataLocale
 
 
 def compile_engagement(
@@ -19,6 +20,7 @@ def compile_engagement(
     engagement_id: str | None = None,
     run_id: str | None = None,
     database: Path | None = None,
+    locale: DataLocale | str = DataLocale.DE,
 ) -> dict:
     """Deprecated dict-returning wrapper over :class:`CompilerService`."""
 
@@ -30,6 +32,7 @@ def compile_engagement(
             engagement_id=engagement_id,
             run_id=run_id,
             database=database,
+            locale=DataLocale(locale),
         )
     )
     return bundle.model_dump(mode="json")

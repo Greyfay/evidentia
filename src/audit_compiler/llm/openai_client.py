@@ -34,10 +34,17 @@ _SYSTEM_PREAMBLE = (
 )
 
 
+class _NormalizedTerm(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source: str
+    target: str
+
+
 class _TermNormalizationPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    normalized_terms: dict[str, str] = Field(default_factory=dict)
+    normalized_terms: list[_NormalizedTerm]
 
 
 class _ClassificationPayload(BaseModel):
@@ -52,13 +59,13 @@ class _ExplanationPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     text: str
-    cited_evidence_ids: list[str] = Field(default_factory=list)
+    cited_evidence_ids: list[str]
 
 
 class _CounterHypothesesPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    hypotheses: list[str] = Field(default_factory=list)
+    hypotheses: list[str]
 
 
 class OpenAIInterpreter:
@@ -79,7 +86,12 @@ class OpenAIInterpreter:
         api_key = os.environ.get("OPENAI_API_KEY")
         if not api_key:
             raise RuntimeError("OPENAI_API_KEY is not set")
-        self._client = OpenAI(api_key=api_key)
+        timeout = min(max(float(os.environ.get("OPENAI_TIMEOUT_SECONDS", "20")), 1.0), 120.0)
+        self._client = OpenAI(
+            api_key=api_key,
+            timeout=timeout,
+            max_retries=1,
+        )
 
     def _parse(self, *, system: str, user: str, schema: type[BaseModel]) -> BaseModel | None:
         try:
@@ -117,7 +129,9 @@ class OpenAIInterpreter:
         return TermNormalization(
             available=True,
             provider=self.provider,
-            normalized_terms=payload.normalized_terms,
+            normalized_terms={
+                term.source: term.target for term in payload.normalized_terms
+            },
         )
 
     def classify_description(self, text: str, labels: list[str]) -> Classification:

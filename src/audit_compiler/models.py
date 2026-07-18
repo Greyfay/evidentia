@@ -37,6 +37,13 @@ class ControlStatus(StrEnum):
     INCONCLUSIVE = "inconclusive"
 
 
+class DataLocale(StrEnum):
+    """Explicit amount and date convention for an engagement."""
+
+    DE = "de"
+    EN = "en"
+
+
 Sha256 = Annotated[str, Field(pattern=r"^[a-f0-9]{64}$")]
 EvidenceList = Annotated[tuple["EvidenceRef", ...], Field(min_length=1)]
 
@@ -414,6 +421,7 @@ class EngagementSummary(ImmutableModel):
     run_id: str
     name: str
     dossier_root: str
+    locale: DataLocale
     compiled_at: datetime
     methodology_version: str
     counts: dict[str, int]

@@ -8,6 +8,20 @@ import type {
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
+async function fetchWithTimeout(
+  input: RequestInfo | URL,
+  init: RequestInit,
+  timeoutMs: number,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    window.clearTimeout(timeout);
+  }
+}
+
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json() as Promise<T>;
@@ -32,16 +46,24 @@ export async function uploadEngagement(
   // A single .zip is a packaged dossier; otherwise each file is an individual source
   // (PDF, Excel, CSV, …). The API accepts one or many under the "files" field.
   for (const file of files) form.append("files", file);
-  const res = await fetch(`${API_BASE}/engagements/upload`, { method: "POST", body: form });
+  const res = await fetchWithTimeout(
+    `${API_BASE}/engagements/upload`,
+    { method: "POST", body: form },
+    5 * 60 * 1000,
+  );
   return json(res);
 }
 
 export async function createInvestigation(engagementId: string, objective: string): Promise<Investigation> {
-  const res = await fetch(`${API_BASE}/investigations`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ engagement_id: engagementId, objective }),
-  });
+  const res = await fetchWithTimeout(
+    `${API_BASE}/investigations`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ engagement_id: engagementId, objective }),
+    },
+    30 * 1000,
+  );
   return json(res);
 }
 

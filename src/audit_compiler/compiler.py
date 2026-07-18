@@ -25,6 +25,7 @@ from audit_compiler.duckdb_store import (
 from audit_compiler.inventory import SourceFile, inventory_dossier
 from audit_compiler.models import (
     CaseBundle,
+    DataLocale,
     EngagementSummary,
     ImmutableModel,
     SourceCompilation,
@@ -410,6 +411,7 @@ class CompileRequest(ImmutableModel):
     name: str | None = None
     database: Path | None = None
     params: dict[str, object] = Field(default_factory=dict)
+    locale: DataLocale = DataLocale.DE
 
 
 class CompilerService:
@@ -421,7 +423,9 @@ class CompilerService:
         from audit_compiler.controls.base import ControlContext
         from audit_compiler.controls.registry import METHODOLOGY_VERSION, ControlEngine
         from audit_compiler.duckdb_store import DuckDBAuditStore
+        from audit_compiler.ir.canonical import map_canonical_events
         from audit_compiler.ir.dossier import load_dossier
+        from audit_compiler.ir.roles import using_locale
 
         root = request.dossier.expanduser().resolve()
         if not root.is_dir():
@@ -432,9 +436,19 @@ class CompilerService:
         database.parent.mkdir(parents=True, exist_ok=True)
 
         # This is the only native parse. Everything downstream reads the persisted AIR.
-        parsed = load_dossier(root)
+        parsed = load_dossier(root, locale=request.locale)
+        events = map_canonical_events(
+            parsed,
+            engagement_id=engagement_id,
+            run_id=run_id,
+        )
         store = DuckDBAuditStore(database)
-        store.persist_dossier(engagement_id, run_id, parsed)
+        store.persist_dossier(
+            engagement_id,
+            run_id,
+            parsed,
+            events=events,
+        )
         dossier = store.load_dossier(engagement_id, run_id)
         manifest = inventory_dossier(root)
 
@@ -466,16 +480,17 @@ class CompilerService:
             if not source.path.startswith(".admissible/")
         )
 
-        context = ControlContext(dossier=dossier, params=request.params)
-        cases = tuple(
-            case_dict(
-                finding,
-                admit(finding),
-                engagement_id=engagement_id,
-                run_id=run_id,
+        with using_locale(dossier.locale.value):
+            context = ControlContext(dossier=dossier, params=request.params)
+            cases = tuple(
+                case_dict(
+                    finding,
+                    admit(finding),
+                    engagement_id=engagement_id,
+                    run_id=run_id,
+                )
+                for finding in ControlEngine().run(context)
             )
-            for finding in ControlEngine().run(context)
-        )
         verdicts = [case["verdict"] for case in cases]
         evidence_count = sum(
             len(step["evidence"]) for case in cases for step in case["evidence_chain"]
@@ -486,6 +501,7 @@ class CompilerService:
                 run_id=run_id,
                 name=request.name or root.name,
                 dossier_root=root.name,
+                locale=dossier.locale,
                 compiled_at=datetime.now(UTC),
                 methodology_version=METHODOLOGY_VERSION,
                 counts={
@@ -493,6 +509,7 @@ class CompilerService:
                     "evidence_records": evidence_count,
                     "entities": len({table.name for table in dossier.tables}),
                     "events": sum(len(table.rows) for table in dossier.tables),
+                    "canonical_events": len(events),
                     "confirmed": verdicts.count("CONFIRMED"),
                     "human_review": verdicts.count("HUMAN_REVIEW"),
                     "dismissed": verdicts.count("DISMISSED"),
