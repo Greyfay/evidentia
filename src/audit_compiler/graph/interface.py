@@ -28,6 +28,10 @@ class NodeKind(StrEnum):
     EVIDENCE_REF = "evidence_ref"
     CONTROL_RESULT = "control_result"
     FINDING = "finding"
+    INVESTIGATION = "investigation"
+    HYPOTHESIS = "hypothesis"
+    TOOL_ACTION = "tool_action"
+    OBSERVATION = "observation"
 
 
 class RelationshipKind(StrEnum):
@@ -43,6 +47,9 @@ class RelationshipKind(StrEnum):
     CONTRADICTED_BY = "contradicted_by"
     DISMISSED_BY = "dismissed_by"
     AFFECTS = "affects"
+    INVESTIGATED_BY = "investigated_by"
+    PRODUCED = "produced"
+    COMPARED_WITH = "compared_with"
 
 
 class GraphNode(BaseModel):
