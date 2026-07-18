@@ -1,0 +1,101 @@
+{
+  "engagement": {
+    "name": "Placeholder Engagement (UI fixture — not real data)",
+    "dossier_root": "sample-dossier",
+    "compiled_at": "2026-01-01T09:00:00Z",
+    "methodology_version": "generic-controls@0.1.0",
+    "counts": {
+      "source_files": 3, "evidence_records": 128, "entities": 24, "events": 61,
+      "confirmed": 2, "human_review": 1, "dismissed": 1, "rejected": 0
+    },
+    "source_files": [
+      { "path": "Ledger/postings.txt", "type": "gdpdu", "bytes": 40211, "sha256": "aa11", "status": "parsed", "source_rows": 512, "parsed_rows": 512, "warnings": [] },
+      { "path": "Docs/permissions.xlsx", "type": "xlsx", "bytes": 8123, "sha256": "bb22", "status": "parsed", "source_rows": 40, "parsed_rows": 40, "warnings": [] },
+      { "path": "Docs/plan.docx", "type": "docx", "bytes": 3120, "sha256": "cc33", "status": "warning", "source_rows": 0, "parsed_rows": 0, "warnings": ["No approval threshold sentence detected; using methodology default."] }
+    ]
+  },
+  "cases": [
+    {
+      "case_id": "11111111-1111-1111-1111-111111111111",
+      "title": "Vendor control override (placeholder)",
+      "control_id": "vendor_sod", "control_version": "0.1.0",
+      "verdict": "CONFIRMED", "severity": "high",
+      "assertion": "Occurrence / segregation of duties",
+      "narrative": "One user created and approved a vendor, then posted and paid its invoices with no supporting delivery evidence.",
+      "financial_exposure": { "amount": "111000.00", "currency": "EUR", "label": "net" },
+      "evidence_chain": [
+        { "step": "Same user created and approved the vendor", "evidence": [ { "evidence_id": "e1", "source_path": "Docs/master_changes.csv", "source_type": "csv_row", "locator": { "row": 8, "sheet": null, "cell": null, "page": null, "passage": null }, "raw_value": "…;USER-A;USER-A;Yes", "file_sha256": "dd44" } ] },
+        { "step": "Same user holds create+post+pay rights", "evidence": [ { "evidence_id": "e2", "source_path": "Docs/permissions.xlsx", "source_type": "xlsx_cell", "locator": { "row": 7, "sheet": "Rights", "cell": "F7", "page": null, "passage": null }, "raw_value": "create,post,pay", "file_sha256": "bb22" } ] }
+      ],
+      "calculation": { "expression": "45000 + 66000", "inputs": [ { "label": "invoice 1", "value": "45000.00", "evidence_id": "e3" }, { "label": "invoice 2", "value": "66000.00", "evidence_id": "e4" } ], "result": "111000.00", "sql": "SELECT SUM(net_amount) FROM vendor_postings WHERE vendor_id = ?" },
+      "counter_tests": [
+        { "name": "independent_approval", "outcome": "absent", "detail": "No approver distinct from creator found.", "evidence": [] },
+        { "name": "goods_receipt", "outcome": "absent", "detail": "Vendor absent from goods-receipt list.", "evidence": [] },
+        { "name": "prior_year_history", "outcome": "absent", "detail": "No opening balance / prior activity.", "evidence": [] }
+      ],
+      "uncertainty": "Service invoices do not always require goods receipts; absence alone is not proof.",
+      "recommended_action": "Obtain framework contract and independent approval evidence before sign-off.",
+      "reviewer_decision": null
+    },
+    {
+      "case_id": "22222222-2222-2222-2222-222222222222",
+      "title": "New vendor — honest twin (placeholder)",
+      "control_id": "vendor_sod", "control_version": "0.1.0",
+      "verdict": "DISMISSED", "severity": "high",
+      "assertion": "Occurrence / segregation of duties",
+      "narrative": "A new mid-year vendor superficially resembles the override case.",
+      "financial_exposure": { "amount": "88000.00", "currency": "EUR", "label": "net" },
+      "evidence_chain": [
+        { "step": "Independent four-eyes approval present", "evidence": [ { "evidence_id": "e5", "source_path": "Docs/master_changes.csv", "source_type": "csv_row", "locator": { "row": 21, "sheet": null, "cell": null, "page": null, "passage": null }, "raw_value": "…;USER-B;USER-C;Yes", "file_sha256": "dd44" } ] }
+      ],
+      "calculation": { "expression": "88000", "inputs": [ { "label": "deliveries", "value": "88000.00", "evidence_id": "e6" } ], "result": "88000.00", "sql": "SELECT SUM(net_amount) FROM vendor_postings WHERE vendor_id = ?" },
+      "counter_tests": [
+        { "name": "independent_approval", "outcome": "present", "detail": "Creator and approver differ (four-eyes).", "evidence": [ { "evidence_id": "e5", "source_path": "Docs/master_changes.csv", "source_type": "csv_row", "locator": { "row": 21, "sheet": null, "cell": null, "page": null, "passage": null }, "raw_value": "…;USER-B;USER-C;Yes", "file_sha256": "dd44" } ] },
+        { "name": "goods_receipt", "outcome": "present", "detail": "Four goods receipts matched.", "evidence": [] }
+      ],
+      "uncertainty": null,
+      "recommended_action": "No action — controls operated effectively.",
+      "reviewer_decision": null
+    },
+    {
+      "case_id": "33333333-3333-3333-3333-333333333333",
+      "title": "Approval-limit splitting (placeholder)",
+      "control_id": "split_payment", "control_version": "0.1.0",
+      "verdict": "CONFIRMED", "severity": "control",
+      "assertion": "Authorisation / approval limits",
+      "narrative": "Multiple same-day same-reference payments each fall just below the approval threshold but aggregate above it.",
+      "financial_exposure": { "amount": "39040.00", "currency": "EUR", "label": "control" },
+      "evidence_chain": [
+        { "step": "Threshold defined in planning document", "evidence": [ { "evidence_id": "e7", "source_path": "Docs/plan.docx", "source_type": "docx_paragraph", "locator": { "row": null, "sheet": null, "cell": null, "page": null, "passage": "para 3: second approval above 10,000" }, "raw_value": "Payments above 10,000 require a second approval.", "file_sha256": "cc33" } ] }
+      ],
+      "calculation": { "expression": "9780 + 9820 + 9750 + 9690", "inputs": [], "result": "39040.00", "sql": "SELECT payee_id, payment_date, reference, SUM(amount) FROM payments GROUP BY 1,2,3 HAVING COUNT(*)>=2 AND SUM(amount)>=?" },
+      "counter_tests": [
+        { "name": "separate_invoices", "outcome": "absent", "detail": "Payments share one reference.", "evidence": [] },
+        { "name": "instalment_plan", "outcome": "absent", "detail": "No instalment agreement found.", "evidence": [] },
+        { "name": "second_approval", "outcome": "absent", "detail": "No second approval recorded.", "evidence": [] }
+      ],
+      "uncertainty": null,
+      "recommended_action": "Review approval-limit control design and split payments.",
+      "reviewer_decision": null
+    },
+    {
+      "case_id": "44444444-4444-4444-4444-444444444444",
+      "title": "Related-party charge (placeholder)",
+      "control_id": "cutoff", "control_version": "0.1.0",
+      "verdict": "HUMAN_REVIEW", "severity": "medium",
+      "assertion": "Cut-off / completeness",
+      "narrative": "A next-period invoice references a prior-period service date; matching accrual is ambiguous.",
+      "financial_exposure": { "amount": "22000.00", "currency": "EUR", "label": "net" },
+      "evidence_chain": [
+        { "step": "Invoice dated next period, service prior period", "evidence": [ { "evidence_id": "e8", "source_path": "Docs/subsequent.csv", "source_type": "csv_row", "locator": { "row": 2, "sheet": null, "cell": null, "page": null, "passage": null }, "raw_value": "INV1;…;next-period;prior-period;22000", "file_sha256": "ee55" } ] }
+      ],
+      "calculation": { "expression": "22000", "inputs": [], "result": "22000.00", "sql": "SELECT SUM(net_amount) FROM subsequent_invoices WHERE service_period < fy_end AND invoice_period > fy_end" },
+      "counter_tests": [
+        { "name": "matched_accrual", "outcome": "not_applicable", "detail": "Accrual match inconclusive; escalate for judgement.", "evidence": [] }
+      ],
+      "uncertainty": "A general accrual exists but transaction-level matching is inconclusive.",
+      "recommended_action": "Manually reconcile the accrual to these invoices.",
+      "reviewer_decision": null
+    }
+  ]
+}

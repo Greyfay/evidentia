@@ -175,7 +175,7 @@ def test_cli_compile_emits_json_report_and_persists_success(tmp_path: Path) -> N
 
     main(
         [
-            "compile",
+            "store",
             str(tmp_path),
             "--database",
             str(database),
@@ -201,7 +201,7 @@ def test_cli_compile_exits_nonzero_after_emitting_failure_report(tmp_path: Path)
     output = tmp_path / "failure.json"
 
     with pytest.raises(SystemExit) as exit_info:
-        main(["compile", str(tmp_path), "--output", str(output)])
+        main(["store", str(tmp_path), "--output", str(output)])
 
     assert exit_info.value.code == 1
     report = json.loads(output.read_text(encoding="utf-8"))

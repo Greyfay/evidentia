@@ -1,0 +1,2145 @@
+{
+  "engagement": {
+    "name": "Muster Verpackungen — 2025 financial audit",
+    "dossier_root": "Uebungsdaten Muster Verpackungen",
+    "compiled_at": "2026-07-18T11:54:33.225852+00:00",
+    "methodology_version": "generic-controls@0.1.0",
+    "counts": {
+      "source_files": 35,
+      "evidence_records": 85,
+      "entities": 29,
+      "events": 32935,
+      "confirmed": 4,
+      "human_review": 0,
+      "dismissed": 1,
+      "rejected": 0
+    },
+    "source_files": [
+      {
+        "path": "AV/Anlagen.txt",
+        "type": "text",
+        "bytes": 16542,
+        "sha256": "a03157444f1cf80b0bbac95d58ec9457c64d11b4f331a0d37779770a7ff9ca6b",
+        "status": "parsed",
+        "source_rows": 197,
+        "parsed_rows": 197,
+        "warnings": []
+      },
+      {
+        "path": "AV/Anlagenbuchungen.txt",
+        "type": "text",
+        "bytes": 5116,
+        "sha256": "8b634d968d2fd448d504ec1c754f3ba6eb7a5a2d97b12b0e404677c55dcabfd3",
+        "status": "parsed",
+        "source_rows": 56,
+        "parsed_rows": 56,
+        "warnings": []
+      },
+      {
+        "path": "AV/gdpdu-01-08-2002.dtd",
+        "type": "unknown",
+        "bytes": 6668,
+        "sha256": "e93a716e8e022b8624b02f12b805f67c25e3fdd40fe422036f2abbea464e0b76",
+        "status": "skipped",
+        "source_rows": 0,
+        "parsed_rows": 0,
+        "warnings": []
+      },
+      {
+        "path": "AV/index.xml",
+        "type": "xml",
+        "bytes": 3001,
+        "sha256": "37b0154b81a809fa6736e1ecb13dcb1fce48c0f5e97caa345224ef51fe42357f",
+        "status": "skipped",
+        "source_rows": 0,
+        "parsed_rows": 0,
+        "warnings": []
+      },
+      {
+        "path": "Begleitdokumente/Abstimmung_Nebenbuecher_HB_2025.xlsx",
+        "type": "xlsx",
+        "bytes": 5126,
+        "sha256": "c8d85c81c5eacc825a0e850eb5a4d5b2552e1e5271eef310a359072cadca9836",
+        "status": "parsed",
+        "source_rows": 6,
+        "parsed_rows": 6,
+        "warnings": []
+      },
+      {
+        "path": "Begleitdokumente/Berechtigungsauswertung_2025.xlsx",
+        "type": "xlsx",
+        "bytes": 5511,
+        "sha256": "2f269f4bdc742f38fcfa40795d9f28e409022a93d39665efdfc5826e3a006d4d",
+        "status": "parsed",
+        "source_rows": 9,
+        "parsed_rows": 9,
+        "warnings": []
+      },
+      {
+        "path": "Begleitdokumente/Buchungen_Folgeperiode_2026.csv",
+        "type": "csv",
+        "bytes": 5946,
+        "sha256": "7f23737e6d222c28b29753487f7957e727f3a8a935482c0bc9e572f74169b22d",
+        "status": "parsed",
+        "source_rows": 60,
+        "parsed_rows": 60,
+        "warnings": []
+      },
+      {
+        "path": "Begleitdokumente/Exportprotokoll_GDPdU_2025.pdf",
+        "type": "pdf",
+        "bytes": 3692,
+        "sha256": "8f8345c4319a147e4b92f4bebbf8bd33cc8f903b5d7c253e3345391a3386064c",
+        "status": "parsed",
+        "source_rows": 1,
+        "parsed_rows": 1,
+        "warnings": []
+      },
+      {
+        "path": "Begleitdokumente/Fakturajournal_2025.csv",
+        "type": "csv",
+        "bytes": 167850,
+        "sha256": "3d9bef4745c680b8eccdac350317dd25c8897f2a378b3128dc3e9e7d0ede3cc4",
+        "status": "parsed",
+        "source_rows": 2041,
+        "parsed_rows": 2041,
+        "warnings": []
+      },
+      {
+        "path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+        "type": "csv",
+        "bytes": 909,
+        "sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20",
+        "status": "parsed",
+        "source_rows": 8,
+        "parsed_rows": 8,
+        "warnings": []
+      },
+      {
+        "path": "Begleitdokumente/Freigabe-Log_Journale_2025.csv",
+        "type": "csv",
+        "bytes": 7304,
+        "sha256": "60d34498d981592f826e3a2204de457b3ee3251b1a24a9ec8070ed560b8ef1e9",
+        "status": "parsed",
+        "source_rows": 91,
+        "parsed_rows": 91,
+        "warnings": []
+      },
+      {
+        "path": "Begleitdokumente/Gesellschafterliste_Beteiligungen.csv",
+        "type": "csv",
+        "bytes": 299,
+        "sha256": "575c619bd307324422911a402d4ead1dbadf1ca638f580a7cf7053c73b3b994f",
+        "status": "parsed",
+        "source_rows": 4,
+        "parsed_rows": 4,
+        "warnings": []
+      },
+      {
+        "path": "Begleitdokumente/IT-Bestaetigung_Vollstaendigkeit_2025.pdf",
+        "type": "pdf",
+        "bytes": 2745,
+        "sha256": "abf4a4d4c7de2edc50136365ebd46e24497a9e020e793c9ba755331a1e0e2801",
+        "status": "parsed",
+        "source_rows": 1,
+        "parsed_rows": 1,
+        "warnings": []
+      },
+      {
+        "path": "Begleitdokumente/JA-Entwurf_2025_Auszug_Bilanz_GuV.pdf",
+        "type": "pdf",
+        "bytes": 3203,
+        "sha256": "38bd83ac3e2abfb6d8425155c96a6c8ec3f5400446431d74f1cce729271c3c0d",
+        "status": "parsed",
+        "source_rows": 1,
+        "parsed_rows": 1,
+        "warnings": []
+      },
+      {
+        "path": "Begleitdokumente/Kreditlimitliste_Debitoren_2025.csv",
+        "type": "csv",
+        "bytes": 10564,
+        "sha256": "8e6199250787b26761ef8cfd1052a6e976bd901eab7b91def1487a0b442995e3",
+        "status": "parsed",
+        "source_rows": 160,
+        "parsed_rows": 160,
+        "warnings": []
+      },
+      {
+        "path": "Begleitdokumente/OP-Liste_Debitoren_2025.xlsx",
+        "type": "xlsx",
+        "bytes": 14983,
+        "sha256": "2dbdcd1396c970e577a4ac82d1442bfc98b45c2f9b742b38672d5a434f977a5b",
+        "status": "parsed",
+        "source_rows": 273,
+        "parsed_rows": 273,
+        "warnings": []
+      },
+      {
+        "path": "Begleitdokumente/OP-Liste_Kreditoren_2025.xlsx",
+        "type": "xlsx",
+        "bytes": 8846,
+        "sha256": "d673402e350ee6cc29d54251bdb3cdf264b10a1587661a2d6debe1a9f3026f85",
+        "status": "parsed",
+        "source_rows": 122,
+        "parsed_rows": 122,
+        "warnings": []
+      },
+      {
+        "path": "Begleitdokumente/Pruefungsplanung_JET_2025.docx",
+        "type": "docx",
+        "bytes": 37554,
+        "sha256": "76ce88e181f4d2b4614a03781035595fb2c3db247ccf54fbb3e1b65b8594b78b",
+        "status": "parsed",
+        "source_rows": 7,
+        "parsed_rows": 7,
+        "warnings": []
+      },
+      {
+        "path": "Begleitdokumente/Saldenliste_2024_Vorjahr.xlsx",
+        "type": "xlsx",
+        "bytes": 4944,
+        "sha256": "df1f32198a662ca90c0e4f821d873dc948715b3c88d7565d15703ccc712a412d",
+        "status": "parsed",
+        "source_rows": 0,
+        "parsed_rows": 0,
+        "warnings": []
+      },
+      {
+        "path": "Begleitdokumente/Saldenliste_2025.xlsx",
+        "type": "xlsx",
+        "bytes": 8129,
+        "sha256": "cf0994055c0261e141f7a20c48817e775241e6354d4607f5c32a2c3625a3718f",
+        "status": "parsed",
+        "source_rows": 44,
+        "parsed_rows": 44,
+        "warnings": []
+      },
+      {
+        "path": "Begleitdokumente/Stammdatenaenderungen_2025.csv",
+        "type": "csv",
+        "bytes": 1746,
+        "sha256": "8dfc0fad18696169ddb16ab0d0a34d49bb3ab3096777021858c514d37aa9dbc8",
+        "status": "parsed",
+        "source_rows": 19,
+        "parsed_rows": 19,
+        "warnings": []
+      },
+      {
+        "path": "Begleitdokumente/Warenausgangsliste_2025.csv",
+        "type": "csv",
+        "bytes": 171816,
+        "sha256": "2fcfed81015f3b5388d71859befa4613951a755804ea2c3d72744bd3be0b4eb4",
+        "status": "parsed",
+        "source_rows": 2040,
+        "parsed_rows": 2040,
+        "warnings": []
+      },
+      {
+        "path": "Begleitdokumente/Wareneingangsliste_2025.csv",
+        "type": "csv",
+        "bytes": 65337,
+        "sha256": "395b563a3c8e73d9b90e137d3e317782d98b07f4a1c0e1f16ba26c243e3d52c1",
+        "status": "parsed",
+        "source_rows": 858,
+        "parsed_rows": 858,
+        "warnings": []
+      },
+      {
+        "path": "Debitoren/Kunden.txt",
+        "type": "text",
+        "bytes": 19532,
+        "sha256": "0c64a66e3f44d468b106527ab3e7dae279bfbf65b6557580183b01c1c8cfa8b6",
+        "status": "parsed",
+        "source_rows": 160,
+        "parsed_rows": 160,
+        "warnings": []
+      },
+      {
+        "path": "Debitoren/Kundenbuchungen.txt",
+        "type": "text",
+        "bytes": 386855,
+        "sha256": "aca59d26460ee67028d46f0c426488957f2c75bab142d7c3b5363287a1e21bbf",
+        "status": "parsed",
+        "source_rows": 3749,
+        "parsed_rows": 3749,
+        "warnings": []
+      },
+      {
+        "path": "Debitoren/gdpdu-01-08-2002.dtd",
+        "type": "unknown",
+        "bytes": 6668,
+        "sha256": "e93a716e8e022b8624b02f12b805f67c25e3fdd40fe422036f2abbea464e0b76",
+        "status": "skipped",
+        "source_rows": 0,
+        "parsed_rows": 0,
+        "warnings": []
+      },
+      {
+        "path": "Debitoren/index.xml",
+        "type": "xml",
+        "bytes": 3647,
+        "sha256": "691c13c7663d5a2fab1584bf57190f37cfefdfa885166fc098ad9a64a1ce28f3",
+        "status": "skipped",
+        "source_rows": 0,
+        "parsed_rows": 0,
+        "warnings": []
+      },
+      {
+        "path": "Kreditoren/Lieferanten.txt",
+        "type": "text",
+        "bytes": 16683,
+        "sha256": "4b3f8c877056f85610bd12e2dff55e4cf3292ec2ca20b672b37cca9f093c15e0",
+        "status": "parsed",
+        "source_rows": 143,
+        "parsed_rows": 143,
+        "warnings": []
+      },
+      {
+        "path": "Kreditoren/Lieferantenbuchungen.txt",
+        "type": "text",
+        "bytes": 301166,
+        "sha256": "fe8df20a1332a10b1ce0cd15d91db7348709b10da23ff2ea23a4bd17a63a4b36",
+        "status": "parsed",
+        "source_rows": 2584,
+        "parsed_rows": 2584,
+        "warnings": []
+      },
+      {
+        "path": "Kreditoren/gdpdu-01-08-2002.dtd",
+        "type": "unknown",
+        "bytes": 6668,
+        "sha256": "e93a716e8e022b8624b02f12b805f67c25e3fdd40fe422036f2abbea464e0b76",
+        "status": "skipped",
+        "source_rows": 0,
+        "parsed_rows": 0,
+        "warnings": []
+      },
+      {
+        "path": "Kreditoren/index.xml",
+        "type": "xml",
+        "bytes": 3623,
+        "sha256": "9133689a0fe6d9b59bd4a0866238fe5416c7bb878fa01b771c902f3d331283e1",
+        "status": "skipped",
+        "source_rows": 0,
+        "parsed_rows": 0,
+        "warnings": []
+      },
+      {
+        "path": "Sachkonten/Sachkonten.txt",
+        "type": "text",
+        "bytes": 3043,
+        "sha256": "a111845fbf75e3d00f3ffda0510a1ff4857ca74c8acc712feaece2f1c691b78a",
+        "status": "parsed",
+        "source_rows": 43,
+        "parsed_rows": 43,
+        "warnings": []
+      },
+      {
+        "path": "Sachkonten/Sachkontobuchungen.txt",
+        "type": "text",
+        "bytes": 4595110,
+        "sha256": "265f5edd6ee3f1945115c5625d9058ef636a6e04f7887c44aa6813bdbe338b28",
+        "status": "parsed",
+        "source_rows": 20258,
+        "parsed_rows": 20258,
+        "warnings": []
+      },
+      {
+        "path": "Sachkonten/gdpdu-01-08-2002.dtd",
+        "type": "unknown",
+        "bytes": 6668,
+        "sha256": "e93a716e8e022b8624b02f12b805f67c25e3fdd40fe422036f2abbea464e0b76",
+        "status": "skipped",
+        "source_rows": 0,
+        "parsed_rows": 0,
+        "warnings": []
+      },
+      {
+        "path": "Sachkonten/index.xml",
+        "type": "xml",
+        "bytes": 4427,
+        "sha256": "c5b824a1faf7cff0060a53641cd8ed0d45368fbaeb4c9836f83eb3400295ed66",
+        "status": "skipped",
+        "source_rows": 0,
+        "parsed_rows": 0,
+        "warnings": []
+      }
+    ]
+  },
+  "cases": [
+    {
+      "case_id": "dda939ce-0031-5c9a-9d75-02701eb775ad",
+      "title": "Vendor control override and unsupported spend",
+      "control_id": "vendor_sod",
+      "control_version": "0.1.0",
+      "verdict": "CONFIRMED",
+      "verdict_reason": "Evidence and controls support the finding; refuters searched.",
+      "severity": "high",
+      "assertion": "Occurrence / segregation of duties",
+      "narrative": "A newly created vendor was approved without independent review and paid with no supporting delivery evidence.",
+      "financial_exposure": {
+        "amount": "295120.00",
+        "currency": "EUR",
+        "label": "gross"
+      },
+      "evidence_chain": [
+        {
+          "step": "Vendor master created and self-approved by the same user (MV-U05)",
+          "evidence": [
+            {
+              "evidence_id": "808f95a1-fa21-4210-9e6f-0e9ed4001085",
+              "source_path": "Begleitdokumente/Stammdatenaenderungen_2025.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 8,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "12.05.2025",
+              "file_sha256": "8dfc0fad18696169ddb16ab0d0a34d49bb3ab3096777021858c514d37aa9dbc8"
+            },
+            {
+              "evidence_id": "22a78cc5-100d-4cde-852b-488a48f8e32d",
+              "source_path": "Begleitdokumente/Stammdatenaenderungen_2025.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 8,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "12.05.2025",
+              "file_sha256": "8dfc0fad18696169ddb16ab0d0a34d49bb3ab3096777021858c514d37aa9dbc8"
+            }
+          ]
+        },
+        {
+          "step": "User MV-U05 holds create-vendor, post, and payment rights",
+          "evidence": [
+            {
+              "evidence_id": "e5eca21c-b1e0-45f7-9051-c826debffedd",
+              "source_path": "Begleitdokumente/Berechtigungsauswertung_2025.xlsx",
+              "source_type": "xlsx_cell",
+              "locator": {
+                "row": 7,
+                "sheet": "Berechtigungen",
+                "cell": "F7",
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "X",
+              "file_sha256": "2f269f4bdc742f38fcfa40795d9f28e409022a93d39665efdfc5826e3a006d4d"
+            },
+            {
+              "evidence_id": "fe0152dc-2ae5-406b-bc12-4a21dd15b3d4",
+              "source_path": "Begleitdokumente/Berechtigungsauswertung_2025.xlsx",
+              "source_type": "xlsx_cell",
+              "locator": {
+                "row": 7,
+                "sheet": "Berechtigungen",
+                "cell": "C7",
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "X",
+              "file_sha256": "2f269f4bdc742f38fcfa40795d9f28e409022a93d39665efdfc5826e3a006d4d"
+            },
+            {
+              "evidence_id": "3eeae136-6184-46b0-8d57-f55678c24bcf",
+              "source_path": "Begleitdokumente/Berechtigungsauswertung_2025.xlsx",
+              "source_type": "xlsx_cell",
+              "locator": {
+                "row": 7,
+                "sheet": "Berechtigungen",
+                "cell": "E7",
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "X",
+              "file_sha256": "2f269f4bdc742f38fcfa40795d9f28e409022a93d39665efdfc5826e3a006d4d"
+            }
+          ]
+        },
+        {
+          "step": "Invoices and payments booked against the vendor",
+          "evidence": [
+            {
+              "evidence_id": "94991e13-90f6-4f32-8f89-81739dc01457",
+              "source_path": "Kreditoren/Lieferantenbuchungen.txt",
+              "source_type": "text_row",
+              "locator": {
+                "row": 2553,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "-53550,00",
+              "file_sha256": "fe8df20a1332a10b1ce0cd15d91db7348709b10da23ff2ea23a4bd17a63a4b36"
+            },
+            {
+              "evidence_id": "f4165711-bab6-420d-98e0-3d51ee1c1005",
+              "source_path": "Kreditoren/Lieferantenbuchungen.txt",
+              "source_type": "text_row",
+              "locator": {
+                "row": 2555,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "-71400,00",
+              "file_sha256": "fe8df20a1332a10b1ce0cd15d91db7348709b10da23ff2ea23a4bd17a63a4b36"
+            },
+            {
+              "evidence_id": "14a2e89e-ecad-4aec-9ab9-36479fd22d5f",
+              "source_path": "Kreditoren/Lieferantenbuchungen.txt",
+              "source_type": "text_row",
+              "locator": {
+                "row": 2557,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "-45220,00",
+              "file_sha256": "fe8df20a1332a10b1ce0cd15d91db7348709b10da23ff2ea23a4bd17a63a4b36"
+            },
+            {
+              "evidence_id": "3314686b-c512-4e72-bf33-782d980645e6",
+              "source_path": "Kreditoren/Lieferantenbuchungen.txt",
+              "source_type": "text_row",
+              "locator": {
+                "row": 2559,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "-61880,00",
+              "file_sha256": "fe8df20a1332a10b1ce0cd15d91db7348709b10da23ff2ea23a4bd17a63a4b36"
+            },
+            {
+              "evidence_id": "a0f70448-2bcb-4c1d-aadc-5cb1e1993241",
+              "source_path": "Kreditoren/Lieferantenbuchungen.txt",
+              "source_type": "text_row",
+              "locator": {
+                "row": 2561,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "-63070,00",
+              "file_sha256": "fe8df20a1332a10b1ce0cd15d91db7348709b10da23ff2ea23a4bd17a63a4b36"
+            }
+          ]
+        }
+      ],
+      "calculation": {
+        "expression": "53550.00 + 71400.00 + 45220.00 + 61880.00 + 63070.00",
+        "inputs": [
+          {
+            "label": "Beratungsleistungen lt. Rahmenvertrag",
+            "value": "53550.00",
+            "evidence_id": "94991e13-90f6-4f32-8f89-81739dc01457"
+          },
+          {
+            "label": "Beratungsleistungen lt. Rahmenvertrag",
+            "value": "71400.00",
+            "evidence_id": "f4165711-bab6-420d-98e0-3d51ee1c1005"
+          },
+          {
+            "label": "Beratungsleistungen lt. Rahmenvertrag",
+            "value": "45220.00",
+            "evidence_id": "14a2e89e-ecad-4aec-9ab9-36479fd22d5f"
+          },
+          {
+            "label": "Beratungsleistungen lt. Rahmenvertrag",
+            "value": "61880.00",
+            "evidence_id": "3314686b-c512-4e72-bf33-782d980645e6"
+          },
+          {
+            "label": "Beratungsleistungen lt. Rahmenvertrag",
+            "value": "63070.00",
+            "evidence_id": "a0f70448-2bcb-4c1d-aadc-5cb1e1993241"
+          }
+        ],
+        "result": "295120.00",
+        "sql": "SELECT SUM(ABS(amount)) FROM t WHERE account = ? AND amount < 0 AND lower(text) NOT LIKE '%saldenvortrag%'",
+        "evidence": [
+          {
+            "evidence_id": "94991e13-90f6-4f32-8f89-81739dc01457",
+            "source_path": "Kreditoren/Lieferantenbuchungen.txt",
+            "source_type": "text_row",
+            "locator": {
+              "row": 2553,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "-53550,00",
+            "file_sha256": "fe8df20a1332a10b1ce0cd15d91db7348709b10da23ff2ea23a4bd17a63a4b36"
+          },
+          {
+            "evidence_id": "f4165711-bab6-420d-98e0-3d51ee1c1005",
+            "source_path": "Kreditoren/Lieferantenbuchungen.txt",
+            "source_type": "text_row",
+            "locator": {
+              "row": 2555,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "-71400,00",
+            "file_sha256": "fe8df20a1332a10b1ce0cd15d91db7348709b10da23ff2ea23a4bd17a63a4b36"
+          },
+          {
+            "evidence_id": "14a2e89e-ecad-4aec-9ab9-36479fd22d5f",
+            "source_path": "Kreditoren/Lieferantenbuchungen.txt",
+            "source_type": "text_row",
+            "locator": {
+              "row": 2557,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "-45220,00",
+            "file_sha256": "fe8df20a1332a10b1ce0cd15d91db7348709b10da23ff2ea23a4bd17a63a4b36"
+          },
+          {
+            "evidence_id": "3314686b-c512-4e72-bf33-782d980645e6",
+            "source_path": "Kreditoren/Lieferantenbuchungen.txt",
+            "source_type": "text_row",
+            "locator": {
+              "row": 2559,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "-61880,00",
+            "file_sha256": "fe8df20a1332a10b1ce0cd15d91db7348709b10da23ff2ea23a4bd17a63a4b36"
+          },
+          {
+            "evidence_id": "a0f70448-2bcb-4c1d-aadc-5cb1e1993241",
+            "source_path": "Kreditoren/Lieferantenbuchungen.txt",
+            "source_type": "text_row",
+            "locator": {
+              "row": 2561,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "-63070,00",
+            "file_sha256": "fe8df20a1332a10b1ce0cd15d91db7348709b10da23ff2ea23a4bd17a63a4b36"
+          }
+        ]
+      },
+      "counter_tests": [
+        {
+          "name": "independent_approval",
+          "outcome": "absent",
+          "detail": "Creator and approver are the same user; no independent approval.",
+          "required": true,
+          "evidence": [
+            {
+              "evidence_id": "238d9ef6-842b-4635-a45c-55aa31bb3a6b",
+              "source_path": "Begleitdokumente/Stammdatenaenderungen_2025.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 8,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "12.05.2025",
+              "file_sha256": "8dfc0fad18696169ddb16ab0d0a34d49bb3ab3096777021858c514d37aa9dbc8"
+            }
+          ]
+        },
+        {
+          "name": "goods_receipt",
+          "outcome": "absent",
+          "detail": "Vendor does not appear in any goods-receipt list.",
+          "required": true,
+          "evidence": []
+        },
+        {
+          "name": "prior_year_history",
+          "outcome": "absent",
+          "detail": "No opening balance or prior-period activity for the vendor.",
+          "required": true,
+          "evidence": []
+        }
+      ],
+      "uncertainty": "Service invoices do not always carry goods receipts; absence alone is not proof and must be weighed with the other evidence.",
+      "recommended_action": "Obtain the framework contract, independent approval, and service/receipt evidence before sign-off.",
+      "reviewer_decision": null
+    },
+    {
+      "case_id": "1f70575f-b416-502b-ad8d-832b12e6c67c",
+      "title": "Vendor control override and unsupported spend",
+      "control_id": "vendor_sod",
+      "control_version": "0.1.0",
+      "verdict": "DISMISSED",
+      "verdict_reason": "Innocent explanation supported: independent_approval.",
+      "severity": "high",
+      "assertion": "Occurrence / segregation of duties",
+      "narrative": "A newly created vendor; segregation of duties is being verified.",
+      "financial_exposure": {
+        "amount": "56697.55",
+        "currency": "EUR",
+        "label": "gross"
+      },
+      "evidence_chain": [
+        {
+          "step": "Vendor master created (MV-U03) and approved (MV-U02)",
+          "evidence": [
+            {
+              "evidence_id": "035060b7-4472-42f4-b5d1-a2ffa23c19c6",
+              "source_path": "Begleitdokumente/Stammdatenaenderungen_2025.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 11,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "03.06.2025",
+              "file_sha256": "8dfc0fad18696169ddb16ab0d0a34d49bb3ab3096777021858c514d37aa9dbc8"
+            },
+            {
+              "evidence_id": "5c91c8b3-45f5-4823-8be3-ef98c34162eb",
+              "source_path": "Begleitdokumente/Stammdatenaenderungen_2025.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 11,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "03.06.2025",
+              "file_sha256": "8dfc0fad18696169ddb16ab0d0a34d49bb3ab3096777021858c514d37aa9dbc8"
+            }
+          ]
+        },
+        {
+          "step": "Invoices and payments booked against the vendor",
+          "evidence": [
+            {
+              "evidence_id": "38037109-8008-4ee8-b087-daf85cc64020",
+              "source_path": "Kreditoren/Lieferantenbuchungen.txt",
+              "source_type": "text_row",
+              "locator": {
+                "row": 2580,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "-9884,14",
+              "file_sha256": "fe8df20a1332a10b1ce0cd15d91db7348709b10da23ff2ea23a4bd17a63a4b36"
+            },
+            {
+              "evidence_id": "aed58d4e-83ca-4c34-b79a-be2801586fd7",
+              "source_path": "Kreditoren/Lieferantenbuchungen.txt",
+              "source_type": "text_row",
+              "locator": {
+                "row": 2581,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "-18863,88",
+              "file_sha256": "fe8df20a1332a10b1ce0cd15d91db7348709b10da23ff2ea23a4bd17a63a4b36"
+            },
+            {
+              "evidence_id": "f3b9f11e-9b0b-4eb4-8cfe-df165b81031d",
+              "source_path": "Kreditoren/Lieferantenbuchungen.txt",
+              "source_type": "text_row",
+              "locator": {
+                "row": 2582,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "-19232,78",
+              "file_sha256": "fe8df20a1332a10b1ce0cd15d91db7348709b10da23ff2ea23a4bd17a63a4b36"
+            },
+            {
+              "evidence_id": "2f207c9a-86e5-42f8-8a04-64ddd2103612",
+              "source_path": "Kreditoren/Lieferantenbuchungen.txt",
+              "source_type": "text_row",
+              "locator": {
+                "row": 2583,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "-8716,75",
+              "file_sha256": "fe8df20a1332a10b1ce0cd15d91db7348709b10da23ff2ea23a4bd17a63a4b36"
+            }
+          ]
+        }
+      ],
+      "calculation": {
+        "expression": "9884.14 + 18863.88 + 19232.78 + 8716.75",
+        "inputs": [
+          {
+            "label": "Materiallieferung",
+            "value": "9884.14",
+            "evidence_id": "38037109-8008-4ee8-b087-daf85cc64020"
+          },
+          {
+            "label": "Materiallieferung",
+            "value": "18863.88",
+            "evidence_id": "aed58d4e-83ca-4c34-b79a-be2801586fd7"
+          },
+          {
+            "label": "Materiallieferung",
+            "value": "19232.78",
+            "evidence_id": "f3b9f11e-9b0b-4eb4-8cfe-df165b81031d"
+          },
+          {
+            "label": "Materiallieferung",
+            "value": "8716.75",
+            "evidence_id": "2f207c9a-86e5-42f8-8a04-64ddd2103612"
+          }
+        ],
+        "result": "56697.55",
+        "sql": "SELECT SUM(ABS(amount)) FROM t WHERE account = ? AND amount < 0 AND lower(text) NOT LIKE '%saldenvortrag%'",
+        "evidence": [
+          {
+            "evidence_id": "38037109-8008-4ee8-b087-daf85cc64020",
+            "source_path": "Kreditoren/Lieferantenbuchungen.txt",
+            "source_type": "text_row",
+            "locator": {
+              "row": 2580,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "-9884,14",
+            "file_sha256": "fe8df20a1332a10b1ce0cd15d91db7348709b10da23ff2ea23a4bd17a63a4b36"
+          },
+          {
+            "evidence_id": "aed58d4e-83ca-4c34-b79a-be2801586fd7",
+            "source_path": "Kreditoren/Lieferantenbuchungen.txt",
+            "source_type": "text_row",
+            "locator": {
+              "row": 2581,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "-18863,88",
+            "file_sha256": "fe8df20a1332a10b1ce0cd15d91db7348709b10da23ff2ea23a4bd17a63a4b36"
+          },
+          {
+            "evidence_id": "f3b9f11e-9b0b-4eb4-8cfe-df165b81031d",
+            "source_path": "Kreditoren/Lieferantenbuchungen.txt",
+            "source_type": "text_row",
+            "locator": {
+              "row": 2582,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "-19232,78",
+            "file_sha256": "fe8df20a1332a10b1ce0cd15d91db7348709b10da23ff2ea23a4bd17a63a4b36"
+          },
+          {
+            "evidence_id": "2f207c9a-86e5-42f8-8a04-64ddd2103612",
+            "source_path": "Kreditoren/Lieferantenbuchungen.txt",
+            "source_type": "text_row",
+            "locator": {
+              "row": 2583,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "-8716,75",
+            "file_sha256": "fe8df20a1332a10b1ce0cd15d91db7348709b10da23ff2ea23a4bd17a63a4b36"
+          }
+        ]
+      },
+      "counter_tests": [
+        {
+          "name": "independent_approval",
+          "outcome": "present",
+          "detail": "Creator and approver differ (four-eyes principle operated).",
+          "required": true,
+          "evidence": [
+            {
+              "evidence_id": "469df685-41b1-4da9-a746-9b4f7a8449a6",
+              "source_path": "Begleitdokumente/Stammdatenaenderungen_2025.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 11,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "03.06.2025",
+              "file_sha256": "8dfc0fad18696169ddb16ab0d0a34d49bb3ab3096777021858c514d37aa9dbc8"
+            }
+          ]
+        },
+        {
+          "name": "goods_receipt",
+          "outcome": "present",
+          "detail": "4 goods-receipt record(s) matched the vendor.",
+          "required": true,
+          "evidence": [
+            {
+              "evidence_id": "734547af-cae7-426f-a3da-dc6c659e229e",
+              "source_path": "Begleitdokumente/Wareneingangsliste_2025.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 856,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "209112",
+              "file_sha256": "395b563a3c8e73d9b90e137d3e317782d98b07f4a1c0e1f16ba26c243e3d52c1"
+            },
+            {
+              "evidence_id": "58f938b7-9bee-4275-9024-ab67ab6003b0",
+              "source_path": "Begleitdokumente/Wareneingangsliste_2025.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 857,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "209112",
+              "file_sha256": "395b563a3c8e73d9b90e137d3e317782d98b07f4a1c0e1f16ba26c243e3d52c1"
+            },
+            {
+              "evidence_id": "a7426975-45f9-4e90-aba6-fa27437e6bb3",
+              "source_path": "Begleitdokumente/Wareneingangsliste_2025.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 858,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "209112",
+              "file_sha256": "395b563a3c8e73d9b90e137d3e317782d98b07f4a1c0e1f16ba26c243e3d52c1"
+            }
+          ]
+        },
+        {
+          "name": "prior_year_history",
+          "outcome": "absent",
+          "detail": "No opening balance or prior-period activity for the vendor.",
+          "required": true,
+          "evidence": []
+        }
+      ],
+      "uncertainty": "Service invoices do not always carry goods receipts; absence alone is not proof and must be weighed with the other evidence.",
+      "recommended_action": "Obtain the framework contract, independent approval, and service/receipt evidence before sign-off.",
+      "reviewer_decision": null
+    },
+    {
+      "case_id": "14befaab-11bc-5a63-a87c-5a8cd94d665f",
+      "title": "Approval-limit payment splitting",
+      "control_id": "split_payment",
+      "control_version": "0.1.0",
+      "verdict": "CONFIRMED",
+      "verdict_reason": "Evidence and controls support the finding; refuters searched.",
+      "severity": "control",
+      "assertion": "Authorisation / approval limits",
+      "narrative": "4 payments on 14.10.2025 share one reference and each fall below the 10000 EUR approval limit, but aggregate to 39040.00.",
+      "financial_exposure": {
+        "amount": "39040.00",
+        "currency": "EUR",
+        "label": "control"
+      },
+      "evidence_chain": [
+        {
+          "step": "Second-approval threshold is 10000 EUR (policy document)",
+          "evidence": [
+            {
+              "evidence_id": "278f40bd-ad7a-43c5-a258-ce0f40310be4",
+              "source_path": "Begleitdokumente/Pruefungsplanung_JET_2025.docx",
+              "source_type": "docx_paragraph",
+              "locator": {
+                "row": 5,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "3. Interne Kontrollen. Zahlungsfreigaben ab 10.000 EUR erfordern eine zweite Freigabe (Vier-Augen-Prinzip). Kreditoren-Neuanlagen und Bankdatenänderungen sind genehmigungspflichtig (Stammdatenänderungen_2025.csv). Funktionstrennung zwischen Kreditoren-Stammdaten, Buchung und Zahlungslauf ist vorgesehen (Berechtigungsauswertung_2025.xlsx).",
+              "file_sha256": "76ce88e181f4d2b4614a03781035595fb2c3db247ccf54fbb3e1b65b8594b78b"
+            }
+          ]
+        },
+        {
+          "step": "4 same-day payments share reference SAMMEL-200007",
+          "evidence": [
+            {
+              "evidence_id": "20afeec6-a117-4be8-9d28-d00ceaf1189d",
+              "source_path": "Sachkonten/Sachkontobuchungen.txt",
+              "source_type": "text_row",
+              "locator": {
+                "row": 20207,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "SAMMEL-200007",
+              "file_sha256": "265f5edd6ee3f1945115c5625d9058ef636a6e04f7887c44aa6813bdbe338b28"
+            },
+            {
+              "evidence_id": "005c7159-293a-4222-96f8-35bbb5b5360c",
+              "source_path": "Sachkonten/Sachkontobuchungen.txt",
+              "source_type": "text_row",
+              "locator": {
+                "row": 20209,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "SAMMEL-200007",
+              "file_sha256": "265f5edd6ee3f1945115c5625d9058ef636a6e04f7887c44aa6813bdbe338b28"
+            },
+            {
+              "evidence_id": "339bfa97-52b0-4571-92b5-498e635b373b",
+              "source_path": "Sachkonten/Sachkontobuchungen.txt",
+              "source_type": "text_row",
+              "locator": {
+                "row": 20211,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "SAMMEL-200007",
+              "file_sha256": "265f5edd6ee3f1945115c5625d9058ef636a6e04f7887c44aa6813bdbe338b28"
+            },
+            {
+              "evidence_id": "fd710f8d-98ef-4719-ab57-c7f39d9ab119",
+              "source_path": "Sachkonten/Sachkontobuchungen.txt",
+              "source_type": "text_row",
+              "locator": {
+                "row": 20213,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "SAMMEL-200007",
+              "file_sha256": "265f5edd6ee3f1945115c5625d9058ef636a6e04f7887c44aa6813bdbe338b28"
+            }
+          ]
+        }
+      ],
+      "calculation": {
+        "expression": "9780.00 + 9820.00 + 9750.00 + 9690.00",
+        "inputs": [
+          {
+            "label": "SAMMEL-200007",
+            "value": "9780.00",
+            "evidence_id": "388fa158-0d78-4a3f-89c7-6f548a5e3620"
+          },
+          {
+            "label": "SAMMEL-200007",
+            "value": "9820.00",
+            "evidence_id": "01b53265-8928-4ac9-aa81-156b72903297"
+          },
+          {
+            "label": "SAMMEL-200007",
+            "value": "9750.00",
+            "evidence_id": "8e1763de-fdf1-4676-97f0-02e0562fb7d8"
+          },
+          {
+            "label": "SAMMEL-200007",
+            "value": "9690.00",
+            "evidence_id": "68455a25-426a-49e4-929c-886db9245849"
+          }
+        ],
+        "result": "39040.00",
+        "sql": "SELECT reference, day, COUNT(*) AS n, SUM(amount) AS total, MAX(amount) AS biggest FROM t GROUP BY reference, day HAVING COUNT(*) >= 2 AND SUM(amount) >= ? AND MAX(amount) < ?",
+        "evidence": [
+          {
+            "evidence_id": "388fa158-0d78-4a3f-89c7-6f548a5e3620",
+            "source_path": "Sachkonten/Sachkontobuchungen.txt",
+            "source_type": "text_row",
+            "locator": {
+              "row": 20207,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "9780,00",
+            "file_sha256": "265f5edd6ee3f1945115c5625d9058ef636a6e04f7887c44aa6813bdbe338b28"
+          },
+          {
+            "evidence_id": "01b53265-8928-4ac9-aa81-156b72903297",
+            "source_path": "Sachkonten/Sachkontobuchungen.txt",
+            "source_type": "text_row",
+            "locator": {
+              "row": 20209,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "9820,00",
+            "file_sha256": "265f5edd6ee3f1945115c5625d9058ef636a6e04f7887c44aa6813bdbe338b28"
+          },
+          {
+            "evidence_id": "8e1763de-fdf1-4676-97f0-02e0562fb7d8",
+            "source_path": "Sachkonten/Sachkontobuchungen.txt",
+            "source_type": "text_row",
+            "locator": {
+              "row": 20211,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "9750,00",
+            "file_sha256": "265f5edd6ee3f1945115c5625d9058ef636a6e04f7887c44aa6813bdbe338b28"
+          },
+          {
+            "evidence_id": "68455a25-426a-49e4-929c-886db9245849",
+            "source_path": "Sachkonten/Sachkontobuchungen.txt",
+            "source_type": "text_row",
+            "locator": {
+              "row": 20213,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "9690,00",
+            "file_sha256": "265f5edd6ee3f1945115c5625d9058ef636a6e04f7887c44aa6813bdbe338b28"
+          }
+        ]
+      },
+      "counter_tests": [
+        {
+          "name": "separate_invoices",
+          "outcome": "absent",
+          "detail": "Whether the legs settle distinct underlying invoices/documents.",
+          "required": true,
+          "evidence": []
+        },
+        {
+          "name": "instalment_plan",
+          "outcome": "absent",
+          "detail": "Searched payment texts for an instalment agreement.",
+          "required": true,
+          "evidence": []
+        },
+        {
+          "name": "reversal_present",
+          "outcome": "absent",
+          "detail": "Searched for a reversing/storno entry.",
+          "required": true,
+          "evidence": []
+        },
+        {
+          "name": "second_approval",
+          "outcome": "absent",
+          "detail": "No second approval recorded above the threshold.",
+          "required": true,
+          "evidence": []
+        }
+      ],
+      "uncertainty": null,
+      "recommended_action": "Review the approval-limit control and confirm whether the payments should have required a second approval.",
+      "reviewer_decision": null
+    },
+    {
+      "case_id": "6232af96-047e-5b45-9673-3cbdbf3c4394",
+      "title": "Repairs capitalised as fixed assets",
+      "control_id": "capitalisation",
+      "control_version": "0.1.0",
+      "verdict": "CONFIRMED",
+      "verdict_reason": "Evidence and controls support the finding; refuters searched.",
+      "severity": "high",
+      "assertion": "Classification / capitalisation",
+      "narrative": "6 additions with repair/maintenance descriptions were posted to balance-sheet asset accounts rather than maintenance expense, overstating assets and profit.",
+      "financial_exposure": {
+        "amount": "150800.00",
+        "currency": "EUR",
+        "label": "net"
+      },
+      "evidence_chain": [
+        {
+          "step": "Repair-type addition: Reparatur Konfektioniermaschine Linie 2",
+          "evidence": [
+            {
+              "evidence_id": "61e2ebc8-5b58-49bb-8085-e65f3f3b1ce9",
+              "source_path": "AV/Anlagenbuchungen.txt",
+              "source_type": "text_row",
+              "locator": {
+                "row": 49,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "28000,00",
+              "file_sha256": "8b634d968d2fd448d504ec1c754f3ba6eb7a5a2d97b12b0e404677c55dcabfd3"
+            },
+            {
+              "evidence_id": "66103495-77af-4a6f-b58c-d875d7a3a4ec",
+              "source_path": "AV/Anlagen.txt",
+              "source_type": "text_row",
+              "locator": {
+                "row": 191,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "Reparatur Konfektioniermaschine Linie 2",
+              "file_sha256": "a03157444f1cf80b0bbac95d58ec9457c64d11b4f331a0d37779770a7ff9ca6b"
+            }
+          ]
+        },
+        {
+          "step": "Repair-type addition: Austausch Hydraulikaggregat Presse 3",
+          "evidence": [
+            {
+              "evidence_id": "4aa69ef4-9fc5-4ee1-9ecb-3c0a67b8a4bc",
+              "source_path": "AV/Anlagenbuchungen.txt",
+              "source_type": "text_row",
+              "locator": {
+                "row": 50,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "34000,00",
+              "file_sha256": "8b634d968d2fd448d504ec1c754f3ba6eb7a5a2d97b12b0e404677c55dcabfd3"
+            },
+            {
+              "evidence_id": "3e3bf8e6-115d-4cb2-81d4-43543c4a0276",
+              "source_path": "AV/Anlagen.txt",
+              "source_type": "text_row",
+              "locator": {
+                "row": 192,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "Austausch Hydraulikaggregat Presse 3",
+              "file_sha256": "a03157444f1cf80b0bbac95d58ec9457c64d11b4f331a0d37779770a7ff9ca6b"
+            }
+          ]
+        },
+        {
+          "step": "Repair-type addition: Instandsetzung Förderband Halle II",
+          "evidence": [
+            {
+              "evidence_id": "18ae8712-bffb-44c2-aa83-31c59720f99d",
+              "source_path": "AV/Anlagenbuchungen.txt",
+              "source_type": "text_row",
+              "locator": {
+                "row": 51,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "15500,00",
+              "file_sha256": "8b634d968d2fd448d504ec1c754f3ba6eb7a5a2d97b12b0e404677c55dcabfd3"
+            },
+            {
+              "evidence_id": "c90370e9-df7e-4451-966a-9a8779ece195",
+              "source_path": "AV/Anlagen.txt",
+              "source_type": "text_row",
+              "locator": {
+                "row": 193,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "Instandsetzung Förderband Halle II",
+              "file_sha256": "a03157444f1cf80b0bbac95d58ec9457c64d11b4f331a0d37779770a7ff9ca6b"
+            }
+          ]
+        },
+        {
+          "step": "Repair-type addition: Generalüberholung Stanzautomat",
+          "evidence": [
+            {
+              "evidence_id": "90a204f2-fb1b-4015-b77c-ce491e614e41",
+              "source_path": "AV/Anlagenbuchungen.txt",
+              "source_type": "text_row",
+              "locator": {
+                "row": 52,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "41000,00",
+              "file_sha256": "8b634d968d2fd448d504ec1c754f3ba6eb7a5a2d97b12b0e404677c55dcabfd3"
+            },
+            {
+              "evidence_id": "2551ee67-a642-4e33-b01a-0cd441072f86",
+              "source_path": "AV/Anlagen.txt",
+              "source_type": "text_row",
+              "locator": {
+                "row": 194,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "Generalüberholung Stanzautomat",
+              "file_sha256": "a03157444f1cf80b0bbac95d58ec9457c64d11b4f331a0d37779770a7ff9ca6b"
+            }
+          ]
+        },
+        {
+          "step": "Repair-type addition: Reparatur Kälteanlage Lager",
+          "evidence": [
+            {
+              "evidence_id": "7d0c56ac-c520-4346-8fb5-4478471f7464",
+              "source_path": "AV/Anlagenbuchungen.txt",
+              "source_type": "text_row",
+              "locator": {
+                "row": 53,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "12800,00",
+              "file_sha256": "8b634d968d2fd448d504ec1c754f3ba6eb7a5a2d97b12b0e404677c55dcabfd3"
+            },
+            {
+              "evidence_id": "d876168a-51ed-4144-a91e-e6159645d340",
+              "source_path": "AV/Anlagen.txt",
+              "source_type": "text_row",
+              "locator": {
+                "row": 195,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "Reparatur Kälteanlage Lager",
+              "file_sha256": "a03157444f1cf80b0bbac95d58ec9457c64d11b4f331a0d37779770a7ff9ca6b"
+            }
+          ]
+        },
+        {
+          "step": "Repair-type addition: Austausch Antriebssteuerung Palettierer",
+          "evidence": [
+            {
+              "evidence_id": "9c1c47f6-50e6-4b5a-ab10-64e60373d918",
+              "source_path": "AV/Anlagenbuchungen.txt",
+              "source_type": "text_row",
+              "locator": {
+                "row": 54,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "19500,00",
+              "file_sha256": "8b634d968d2fd448d504ec1c754f3ba6eb7a5a2d97b12b0e404677c55dcabfd3"
+            },
+            {
+              "evidence_id": "01b79c6d-a19b-4ac7-a9b7-c446f1e263a6",
+              "source_path": "AV/Anlagen.txt",
+              "source_type": "text_row",
+              "locator": {
+                "row": 196,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "Austausch Antriebssteuerung Palettierer",
+              "file_sha256": "a03157444f1cf80b0bbac95d58ec9457c64d11b4f331a0d37779770a7ff9ca6b"
+            }
+          ]
+        }
+      ],
+      "calculation": {
+        "expression": "28000.00 + 34000.00 + 15500.00 + 41000.00 + 12800.00 + 19500.00",
+        "inputs": [
+          {
+            "label": "Reparatur Konfektioniermaschine Linie 2",
+            "value": "28000.00",
+            "evidence_id": "14ef1f37-f7b0-449f-a7c6-d29646e0baf4"
+          },
+          {
+            "label": "Austausch Hydraulikaggregat Presse 3",
+            "value": "34000.00",
+            "evidence_id": "c917bd34-b94f-413d-9bf4-aab61b191f4d"
+          },
+          {
+            "label": "Instandsetzung Förderband Halle II",
+            "value": "15500.00",
+            "evidence_id": "a36d1cd1-5b7e-4e91-8432-ad8a8d39c7c8"
+          },
+          {
+            "label": "Generalüberholung Stanzautomat",
+            "value": "41000.00",
+            "evidence_id": "150fce2e-465e-4e4a-ae3e-7de5109a612f"
+          },
+          {
+            "label": "Reparatur Kälteanlage Lager",
+            "value": "12800.00",
+            "evidence_id": "1eefef52-e8d5-4a91-9525-9c96ca69f15b"
+          },
+          {
+            "label": "Austausch Antriebssteuerung Palettierer",
+            "value": "19500.00",
+            "evidence_id": "66bd7e6c-0a36-479a-8657-7bf14bc859ac"
+          }
+        ],
+        "result": "150800.00",
+        "sql": "SELECT SUM(amount) FROM t",
+        "evidence": [
+          {
+            "evidence_id": "14ef1f37-f7b0-449f-a7c6-d29646e0baf4",
+            "source_path": "AV/Anlagenbuchungen.txt",
+            "source_type": "text_row",
+            "locator": {
+              "row": 49,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "28000,00",
+            "file_sha256": "8b634d968d2fd448d504ec1c754f3ba6eb7a5a2d97b12b0e404677c55dcabfd3"
+          },
+          {
+            "evidence_id": "c917bd34-b94f-413d-9bf4-aab61b191f4d",
+            "source_path": "AV/Anlagenbuchungen.txt",
+            "source_type": "text_row",
+            "locator": {
+              "row": 50,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "34000,00",
+            "file_sha256": "8b634d968d2fd448d504ec1c754f3ba6eb7a5a2d97b12b0e404677c55dcabfd3"
+          },
+          {
+            "evidence_id": "a36d1cd1-5b7e-4e91-8432-ad8a8d39c7c8",
+            "source_path": "AV/Anlagenbuchungen.txt",
+            "source_type": "text_row",
+            "locator": {
+              "row": 51,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "15500,00",
+            "file_sha256": "8b634d968d2fd448d504ec1c754f3ba6eb7a5a2d97b12b0e404677c55dcabfd3"
+          },
+          {
+            "evidence_id": "150fce2e-465e-4e4a-ae3e-7de5109a612f",
+            "source_path": "AV/Anlagenbuchungen.txt",
+            "source_type": "text_row",
+            "locator": {
+              "row": 52,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "41000,00",
+            "file_sha256": "8b634d968d2fd448d504ec1c754f3ba6eb7a5a2d97b12b0e404677c55dcabfd3"
+          },
+          {
+            "evidence_id": "1eefef52-e8d5-4a91-9525-9c96ca69f15b",
+            "source_path": "AV/Anlagenbuchungen.txt",
+            "source_type": "text_row",
+            "locator": {
+              "row": 53,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "12800,00",
+            "file_sha256": "8b634d968d2fd448d504ec1c754f3ba6eb7a5a2d97b12b0e404677c55dcabfd3"
+          },
+          {
+            "evidence_id": "66bd7e6c-0a36-479a-8657-7bf14bc859ac",
+            "source_path": "AV/Anlagenbuchungen.txt",
+            "source_type": "text_row",
+            "locator": {
+              "row": 54,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "19500,00",
+            "file_sha256": "8b634d968d2fd448d504ec1c754f3ba6eb7a5a2d97b12b0e404677c55dcabfd3"
+          }
+        ]
+      },
+      "counter_tests": [
+        {
+          "name": "investment_request",
+          "outcome": "absent",
+          "detail": "Searched documents for an investment request for these assets.",
+          "required": true,
+          "evidence": []
+        },
+        {
+          "name": "capacity_or_useful_life",
+          "outcome": "absent",
+          "detail": "Descriptions indicate restoration, not capacity increase or useful-life extension.",
+          "required": true,
+          "evidence": []
+        },
+        {
+          "name": "separable_new_asset",
+          "outcome": "absent",
+          "detail": "Descriptions reference existing equipment, not a distinct new asset.",
+          "required": true,
+          "evidence": []
+        }
+      ],
+      "uncertainty": null,
+      "recommended_action": "Reclassify repair costs to maintenance expense and correct asset values.",
+      "reviewer_decision": null
+    },
+    {
+      "case_id": "ef5dfa0e-0a89-58d0-a4cf-4e3890c41e37",
+      "title": "Prior-period costs booked in the subsequent period",
+      "control_id": "cutoff",
+      "control_version": "0.1.0",
+      "verdict": "CONFIRMED",
+      "verdict_reason": "Evidence and controls support the finding; refuters searched.",
+      "severity": "high",
+      "assertion": "Cut-off / completeness of liabilities",
+      "narrative": "8 invoices dated after 2025-12-31 relate to services delivered before the balance-sheet date, with no transaction-level accrual recorded, overstating profit.",
+      "financial_exposure": {
+        "amount": "192000.00",
+        "currency": "EUR",
+        "label": "net"
+      },
+      "evidence_chain": [
+        {
+          "step": "Balance-sheet date is 2025-12-31",
+          "evidence": [
+            {
+              "evidence_id": "5ef464f8-c1c7-499f-921e-861690d5a325",
+              "source_path": "Begleitdokumente/JA-Entwurf_2025_Auszug_Bilanz_GuV.pdf",
+              "source_type": "pdf_passage",
+              "locator": {
+                "row": null,
+                "sheet": null,
+                "cell": null,
+                "page": 1,
+                "passage": "Muster Verpackungen GmbH, Musterhausen – Jahresabschluss zum\n31.12.2025 (ENTWURF, ungeprüft) – Auszug\nBilanz (Kurzform; Beträge in EUR)\nAKTIVA\n31.12.2025 EUR\nSachanlagen\n19.729.014,76\nVorräte\n14.978.6"
+              },
+              "raw_value": "Muster Verpackungen GmbH, Musterhausen – Jahresabschluss zum\n31.12.2025 (ENTWURF, ungeprüft) – Auszug\nBilanz (Kurzform; Beträge in EUR)\nAKTIVA\n31.12.2025 EUR\nSachanlagen\n19.729.014,76\nVorräte\n14.978.694,04\nForderungen aus L.u.L.\n13.412.543,05\nSonstige Vermögensgegenstände (inkl. Vorsteuer)\n874.463,98\nKassenbestand und Guthaben bei Kreditinstituten\n7.418.161,54\nSumme Aktiva\n56.412.877,37\nPASSIVA\n31.12.2025 EUR\nEigenkapital (gezeichnetes Kapital, Rücklagen)\n36.841.565,00\nJahresüberschuss\n2.599.841,80\nRückstellungen\n891.500,00\nVerbindlichkeiten gegenüber Kreditinstituten\n1.400.000,00\nVerbindlichkeiten aus L.u.L.\n13.208.855,00\nKreditorische Debitoren\n691.260,00\nUmsatzsteuer\n779.855,57\nSonstige Verbindlichkeiten\n0,00\nSumme Passiva\n56.412.877,37\nGewinn- und Verlustrechnung (Kurzform)\nPosition\n2025 EUR\nUmsatzerlöse\n55.441.422,00\n./. Umsatzboni und Rückvergütungen\n-691.260,00\nMaterialaufwand / Wareneinsatz\n-38.398.395,96\nPersonalaufwand\n-4.932.936,00\nAbschreibungen\n-1.670.418,24\nSonstige betriebliche Aufwendungen\n-7.022.526,00\nSonstige betriebliche Erträge\n0,00\nZinsergebnis\n-126.044,00\nJahresüberschuss (Entwurf)\n2.599.841,80\nAnmerkung: Kurzform auf Basis der Summen- und Saldenliste per 31.12.2025. Anlagevermögen inkl. Zugänge des Geschäftsjahres.\nForderungen und Verbindlichkeiten mit Restlaufzeit bis zu einem Jahr, soweit nicht anders vermerkt.",
+              "file_sha256": "38bd83ac3e2abfb6d8425155c96a6c8ec3f5400446431d74f1cce729271c3c0d"
+            }
+          ]
+        },
+        {
+          "step": "Invoice ER901427 dated 2026-01-15 for service 2025-12-21 (prior period)",
+          "evidence": [
+            {
+              "evidence_id": "136ecd3a-4e89-4088-9339-f741352a893f",
+              "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 2,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "15.01.2026",
+              "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+            },
+            {
+              "evidence_id": "f370f282-70eb-447f-af90-238f68b8a69d",
+              "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 2,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "21.12.2025",
+              "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+            },
+            {
+              "evidence_id": "5febca26-3088-42ac-b7ed-0c8b23cdc961",
+              "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 2,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "22000,00",
+              "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+            }
+          ]
+        },
+        {
+          "step": "Invoice ER901428 dated 2026-01-03 for service 2025-12-26 (prior period)",
+          "evidence": [
+            {
+              "evidence_id": "a5ba1f92-6acd-4922-afd4-24010fdb9b28",
+              "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 3,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "03.01.2026",
+              "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+            },
+            {
+              "evidence_id": "f69c8c3d-5216-450b-84da-e6a4736af84a",
+              "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 3,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "26.12.2025",
+              "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+            },
+            {
+              "evidence_id": "bfe92c53-5129-4d3f-bf29-f884365dea83",
+              "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 3,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "38000,00",
+              "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+            }
+          ]
+        },
+        {
+          "step": "Invoice ER901429 dated 2026-01-15 for service 2025-12-22 (prior period)",
+          "evidence": [
+            {
+              "evidence_id": "6d11f269-383f-4da9-8c6e-a1e1fc6ead84",
+              "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 4,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "15.01.2026",
+              "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+            },
+            {
+              "evidence_id": "375e53e9-be35-4c7f-b48b-f8f0f3a4ac36",
+              "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 4,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "22.12.2025",
+              "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+            },
+            {
+              "evidence_id": "2df989cf-f2fb-43f4-8929-5b7ec19f274a",
+              "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 4,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "41000,00",
+              "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+            }
+          ]
+        },
+        {
+          "step": "Invoice ER901430 dated 2026-01-11 for service 2025-12-22 (prior period)",
+          "evidence": [
+            {
+              "evidence_id": "46e6713c-eef8-4417-b256-3e6b0f8dc9ba",
+              "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 5,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "11.01.2026",
+              "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+            },
+            {
+              "evidence_id": "bca8bdda-0a23-42d7-8472-caea1c4c1371",
+              "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 5,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "22.12.2025",
+              "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+            },
+            {
+              "evidence_id": "3b986182-c898-4203-83da-a075d35a7680",
+              "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 5,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "17000,00",
+              "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+            }
+          ]
+        },
+        {
+          "step": "Invoice ER901431 dated 2026-01-13 for service 2025-12-25 (prior period)",
+          "evidence": [
+            {
+              "evidence_id": "d6bd4797-00e7-41d0-ae63-30cca4a716f5",
+              "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 6,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "13.01.2026",
+              "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+            },
+            {
+              "evidence_id": "0897f6d1-8147-4e2a-92b8-ff83ec52fe79",
+              "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 6,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "25.12.2025",
+              "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+            },
+            {
+              "evidence_id": "6b39d153-00af-45dc-9064-0fedcb03d7d7",
+              "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 6,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "26000,00",
+              "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+            }
+          ]
+        },
+        {
+          "step": "Invoice ER901432 dated 2026-01-13 for service 2025-12-19 (prior period)",
+          "evidence": [
+            {
+              "evidence_id": "45e86caa-2da2-4331-8edb-15c7a842f0e4",
+              "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 7,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "13.01.2026",
+              "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+            },
+            {
+              "evidence_id": "66043e1b-5357-43f0-9cc0-3c1c6a1bf34a",
+              "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 7,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "19.12.2025",
+              "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+            },
+            {
+              "evidence_id": "4be89dbb-b6e1-439c-a61e-3c1ba7e322c7",
+              "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 7,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "14500,00",
+              "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+            }
+          ]
+        },
+        {
+          "step": "Invoice ER901433 dated 2026-01-14 for service 2025-12-20 (prior period)",
+          "evidence": [
+            {
+              "evidence_id": "72729bf6-52de-480a-9d30-5eb80ec4d15c",
+              "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 8,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "14.01.2026",
+              "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+            },
+            {
+              "evidence_id": "f9d6d8d6-f9fd-4309-9602-7a6e704bb9e3",
+              "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 8,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "20.12.2025",
+              "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+            },
+            {
+              "evidence_id": "71497c40-1ada-47a7-894f-c6221fb72a66",
+              "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 8,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "20500,00",
+              "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+            }
+          ]
+        },
+        {
+          "step": "Invoice ER901434 dated 2026-01-06 for service 2025-12-20 (prior period)",
+          "evidence": [
+            {
+              "evidence_id": "9be6ea3a-64ab-44a9-b3e7-3f8cec3b2e51",
+              "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 9,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "06.01.2026",
+              "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+            },
+            {
+              "evidence_id": "71acb196-6852-47b7-b3f4-aea5c6e5baf4",
+              "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 9,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "20.12.2025",
+              "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+            },
+            {
+              "evidence_id": "c81fd14f-7c24-4b7f-a2bf-b3456500a3d5",
+              "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+              "source_type": "csv_row",
+              "locator": {
+                "row": 9,
+                "sheet": null,
+                "cell": null,
+                "page": null,
+                "passage": null
+              },
+              "raw_value": "13000,00",
+              "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+            }
+          ]
+        }
+      ],
+      "calculation": {
+        "expression": "22000.00 + 38000.00 + 41000.00 + 17000.00 + 26000.00 + 14500.00 + 20500.00 + 13000.00",
+        "inputs": [
+          {
+            "label": "ER901427",
+            "value": "22000.00",
+            "evidence_id": "8165150a-d3dc-4d30-a96b-fbb3e21e408f"
+          },
+          {
+            "label": "ER901428",
+            "value": "38000.00",
+            "evidence_id": "4ff478d7-c505-4684-b43d-5e4f5e48663c"
+          },
+          {
+            "label": "ER901429",
+            "value": "41000.00",
+            "evidence_id": "1cc91866-a9e3-4a99-8479-22ecb0f3e359"
+          },
+          {
+            "label": "ER901430",
+            "value": "17000.00",
+            "evidence_id": "9f673927-5a2c-470a-9494-d2a3816b506f"
+          },
+          {
+            "label": "ER901431",
+            "value": "26000.00",
+            "evidence_id": "dc765db1-d0f6-45ac-847a-bca80c8b8815"
+          },
+          {
+            "label": "ER901432",
+            "value": "14500.00",
+            "evidence_id": "918fe894-c031-47b0-b6b0-e7701e49331f"
+          },
+          {
+            "label": "ER901433",
+            "value": "20500.00",
+            "evidence_id": "63f73866-abae-4da6-a918-179bd67add3e"
+          },
+          {
+            "label": "ER901434",
+            "value": "13000.00",
+            "evidence_id": "e0f5ee25-e620-42d4-9208-5882a1a1289d"
+          }
+        ],
+        "result": "192000.00",
+        "sql": "SELECT SUM(amount) FROM t",
+        "evidence": [
+          {
+            "evidence_id": "8165150a-d3dc-4d30-a96b-fbb3e21e408f",
+            "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+            "source_type": "csv_row",
+            "locator": {
+              "row": 2,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "22000,00",
+            "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+          },
+          {
+            "evidence_id": "4ff478d7-c505-4684-b43d-5e4f5e48663c",
+            "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+            "source_type": "csv_row",
+            "locator": {
+              "row": 3,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "38000,00",
+            "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+          },
+          {
+            "evidence_id": "1cc91866-a9e3-4a99-8479-22ecb0f3e359",
+            "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+            "source_type": "csv_row",
+            "locator": {
+              "row": 4,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "41000,00",
+            "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+          },
+          {
+            "evidence_id": "9f673927-5a2c-470a-9494-d2a3816b506f",
+            "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+            "source_type": "csv_row",
+            "locator": {
+              "row": 5,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "17000,00",
+            "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+          },
+          {
+            "evidence_id": "dc765db1-d0f6-45ac-847a-bca80c8b8815",
+            "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+            "source_type": "csv_row",
+            "locator": {
+              "row": 6,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "26000,00",
+            "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+          },
+          {
+            "evidence_id": "918fe894-c031-47b0-b6b0-e7701e49331f",
+            "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+            "source_type": "csv_row",
+            "locator": {
+              "row": 7,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "14500,00",
+            "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+          },
+          {
+            "evidence_id": "63f73866-abae-4da6-a918-179bd67add3e",
+            "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+            "source_type": "csv_row",
+            "locator": {
+              "row": 8,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "20500,00",
+            "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+          },
+          {
+            "evidence_id": "e0f5ee25-e620-42d4-9208-5882a1a1289d",
+            "source_path": "Begleitdokumente/Fakturajournal_Januar_2026_Kreditoren.csv",
+            "source_type": "csv_row",
+            "locator": {
+              "row": 9,
+              "sheet": null,
+              "cell": null,
+              "page": null,
+              "passage": null
+            },
+            "raw_value": "13000,00",
+            "file_sha256": "2c8be9391f72c691630da6ad62f7b34202b765fd33c95f340267118b0e34bd20"
+          }
+        ]
+      },
+      "counter_tests": [
+        {
+          "name": "matched_accrual",
+          "outcome": "absent",
+          "detail": "Searched the ledger for a transaction-level accrual matching these invoices before the balance-sheet date.",
+          "required": true,
+          "evidence": []
+        },
+        {
+          "name": "returned_or_cancelled",
+          "outcome": "absent",
+          "detail": "No return, cancellation, or dispute found for these services.",
+          "required": true,
+          "evidence": []
+        }
+      ],
+      "uncertainty": "A general accrual may exist; only a per-invoice match may clear these, so partial coverage requires manual reconciliation.",
+      "recommended_action": "Recognise the unrecorded liabilities in the period under audit or evidence a matching accrual per invoice.",
+      "reviewer_decision": null
+    }
+  ]
+}

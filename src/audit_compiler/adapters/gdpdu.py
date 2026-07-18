@@ -18,7 +18,7 @@ from audit_compiler.inventory import SourceFile, infer_file_type, sha256_file
 from audit_compiler.models import EvidenceRef, ImmutableModel, SourceType
 
 _TABLE_TAGS = {"dataset", "table", "tabelle"}
-_FIELD_TAGS = {"field", "column", "feld", "spalte"}
+_FIELD_TAGS = {"field", "column", "feld", "spalte", "variablecolumn", "fixedcolumn"}
 _PATH_NAMES = {"file", "filename", "filepath", "path", "datafile", "datei", "url"}
 _ENCODING_NAMES = {"encoding", "charset", "codepage"}
 _DELIMITER_NAMES = {"delimiter", "separator", "trennzeichen", "columndelimiter"}
@@ -231,6 +231,13 @@ def parse_gdpdu_index(
     definitions: list[GdpduTableDefinition] = []
     for element in document.iter():
         if _local_name(element.tag) not in _TABLE_TAGS:
+            continue
+        # A container that holds nested table elements (e.g. a DataSet wrapping Tables)
+        # is not itself a leaf data table; skip it so its children are not concatenated.
+        if any(
+            descendant is not element and _local_name(descendant.tag) in _TABLE_TAGS
+            for descendant in element.iter()
+        ):
             continue
         source = _attribute_or_descendant(element, _PATH_NAMES)
         if not source:

@@ -1,0 +1,147 @@
+@import "tailwindcss";
+
+:root {
+  --ink-0: #0a0c0e;
+  --ink-1: #101418;
+  --ink-2: #161b20;
+  --ink-3: #1d2329;
+  --hairline: #262e35;
+  --hairline-strong: #333d46;
+  --text-0: #e8ebee;
+  --text-1: #b7c0c8;
+  --text-2: #7c8891;
+  --amber: #d99a3d;
+  --amber-dim: #8a6a35;
+  --amber-glow: rgba(217, 154, 61, 0.16);
+  --brick: #b8564a;
+  --brick-glow: rgba(184, 86, 74, 0.14);
+  --forest: #5c9c76;
+  --forest-glow: rgba(92, 156, 118, 0.14);
+  --steel: #5f8ab8;
+  --steel-glow: rgba(95, 138, 184, 0.14);
+  --slate: #6b7580;
+
+  --font-display: ui-serif, "Iowan Old Style", "Apple Garamond", Baskerville, Georgia, serif;
+  --font-body: -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, Helvetica, Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+
+@theme inline {
+  --color-ink-0: var(--ink-0);
+  --color-ink-1: var(--ink-1);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-hairline: var(--hairline);
+  --color-hairline-strong: var(--hairline-strong);
+  --color-text-0: var(--text-0);
+  --color-text-1: var(--text-1);
+  --color-text-2: var(--text-2);
+  --color-amber: var(--amber);
+  --color-brick: var(--brick);
+  --color-forest: var(--forest);
+  --color-steel: var(--steel);
+  --color-slate: var(--slate);
+  --font-display: var(--font-display);
+  --font-body: var(--font-body);
+  --font-mono: var(--font-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  background: var(--ink-0);
+  color: var(--text-0);
+  font-family: var(--font-body);
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  background-image:
+    radial-gradient(ellipse 1200px 600px at 50% -10%, rgba(217, 154, 61, 0.05), transparent 60%),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.012) 0px,
+      rgba(255, 255, 255, 0.012) 1px,
+      transparent 1px,
+      transparent 3px
+    );
+}
+
+::selection {
+  background: var(--amber-glow);
+  color: var(--text-0);
+}
+
+:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: var(--ink-0);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--ink-3);
+  border-radius: 0;
+  border: 2px solid var(--ink-0);
+}
+
+@keyframes drawer-in {
+  from {
+    transform: translateX(24px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+.mono-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+.exhibit-tag {
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+}
+
+.stamp {
+  transform: rotate(-1.2deg);
+}
