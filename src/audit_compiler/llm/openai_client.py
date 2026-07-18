@@ -34,10 +34,17 @@ _SYSTEM_PREAMBLE = (
 )
 
 
+class _NormalizedTerm(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    source: str
+    target: str
+
+
 class _TermNormalizationPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    normalized_terms: dict[str, str] = Field(default_factory=dict)
+    normalized_terms: list[_NormalizedTerm]
 
 
 class _ClassificationPayload(BaseModel):
@@ -52,13 +59,13 @@ class _ExplanationPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     text: str
-    cited_evidence_ids: list[str] = Field(default_factory=list)
+    cited_evidence_ids: list[str]
 
 
 class _CounterHypothesesPayload(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    hypotheses: list[str] = Field(default_factory=list)
+    hypotheses: list[str]
 
 
 class OpenAIInterpreter:
@@ -117,7 +124,9 @@ class OpenAIInterpreter:
         return TermNormalization(
             available=True,
             provider=self.provider,
-            normalized_terms=payload.normalized_terms,
+            normalized_terms={
+                term.source: term.target for term in payload.normalized_terms
+            },
         )
 
     def classify_description(self, text: str, labels: list[str]) -> Classification:
