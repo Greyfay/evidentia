@@ -561,45 +561,33 @@ def store_parse_reconciliation(
     )
 
 
-def _clear_xlsx_source(
-    connection: duckdb.DuckDBPyConnection, source_path: str
-) -> None:
-    evidence_ids = [
-        row[0]
-        for row in connection.execute(
-            """
-            SELECT xlsx_cells.evidence_id
-            FROM xlsx_cells
-            JOIN xlsx_sheets USING (sheet_id)
-            WHERE source_path = ?
-            """,
-            [source_path],
-        ).fetchall()
-    ]
-    sheet_ids = [
-        row[0]
-        for row in connection.execute(
-            "SELECT sheet_id FROM xlsx_sheets WHERE source_path = ?", [source_path]
-        ).fetchall()
-    ]
-    for sheet_id in sheet_ids:
-        connection.execute("DELETE FROM xlsx_metadata_rows WHERE sheet_id = ?", [sheet_id])
-        connection.execute("DELETE FROM xlsx_normalized_records WHERE sheet_id = ?", [sheet_id])
-        connection.execute("DELETE FROM xlsx_cells WHERE sheet_id = ?", [sheet_id])
-    connection.execute("DELETE FROM xlsx_sheets WHERE source_path = ?", [source_path])
-    connection.execute("DELETE FROM xlsx_workbooks WHERE source_path = ?", [source_path])
-    for evidence_id in evidence_ids:
-        connection.execute("DELETE FROM evidence_refs WHERE evidence_id = ?", [evidence_id])
-
-
 def store_xlsx_workbook(
     connection: duckdb.DuckDBPyConnection, workbook: XlsxWorkbook
 ) -> int:
-    """Persist every XLSX sheet/cell plus metadata and normalized table records."""
+    """Persist an XLSX compatibility projection if the source is not already present.
+
+    The canonical run tables own versioned data. These legacy tables are keyed only by
+    ``source_path`` and DuckDB cannot replace their FK graph inside a larger transaction,
+    so an existing projection is left untouched rather than weakening run atomicity.
+    """
 
     source = workbook.source_file
+    existing = connection.execute(
+        """
+        SELECT count(*)
+        FROM xlsx_normalized_records
+        JOIN xlsx_sheets USING (sheet_id)
+        WHERE source_path = ?
+        """,
+        [source.path],
+    ).fetchone()[0]
+    workbook_exists = connection.execute(
+        "SELECT count(*) FROM xlsx_workbooks WHERE source_path = ?",
+        [source.path],
+    ).fetchone()[0]
+    if workbook_exists:
+        return existing
     store_source_files(connection, (source,))
-    _clear_xlsx_source(connection, source.path)
     connection.execute(
         """
         INSERT INTO xlsx_workbooks (source_path, extraction_method, sheet_count)
