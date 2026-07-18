@@ -7,6 +7,18 @@ async function json<T>(res: Response): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+export interface AgentStatus {
+  mode: "live" | "partial" | "fallback";
+  planner: string;
+  openai: { active: boolean; model: string | null };
+  cognee: { active: boolean };
+}
+
+export async function getAgentStatus(): Promise<AgentStatus> {
+  const res = await fetch(`${API_BASE}/agent-status`, { cache: "no-store" });
+  return json(res);
+}
+
 export async function uploadEngagement(
   file: File,
 ): Promise<{ engagement_id: string; engagement: EngagementSummary }> {
