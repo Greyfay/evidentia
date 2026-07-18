@@ -155,15 +155,145 @@ class CanonicalPayment(ImmutableModel):
         return value
 
 
-CounterOutcome = Literal["absent", "present", "not_applicable"]
+class CounterTestOutcome(StrEnum):
+    """Canonical result of looking for evidence that could refute a finding."""
+
+    PRESENT = "present"
+    SEARCHED_ABSENT = "searched_absent"
+    UNKNOWN = "unknown"
+    NOT_EXECUTED = "not_executed"
+    NOT_APPLICABLE = "not_applicable"
+    CONFLICTING = "conflicting"
+
+
+class CounterEvidenceSearch(ImmutableModel):
+    """Replayable description of a counter-evidence search.
+
+    Sources and evidence identifiers are sorted because they are sets in the audit
+    domain.  This prevents discovery order from changing a contract hash.
+    """
+
+    scope: str = Field(min_length=1)
+    method: str = Field(min_length=1)
+    searched_sources: tuple[str, ...] = ()
+    evidence_ids: tuple[UUID, ...] = ()
+
+    @field_validator("searched_sources")
+    @classmethod
+    def canonical_sources(cls, value: tuple[str, ...]) -> tuple[str, ...]:
+        if any(not source for source in value):
+            raise ValueError("searched_sources cannot contain empty values")
+        return tuple(sorted(set(value)))
+
+    @field_validator("evidence_ids")
+    @classmethod
+    def canonical_evidence_ids(cls, value: tuple[UUID, ...]) -> tuple[UUID, ...]:
+        return tuple(sorted(set(value), key=str))
+
+
+# Kept as a public alias for callers which used the pre-enum annotation.
+CounterOutcome = CounterTestOutcome
 
 
 class CounterTest(ImmutableModel):
     name: str = Field(min_length=1)
-    outcome: CounterOutcome
+    outcome: CounterTestOutcome
     detail: str
     required: bool = True
     evidence: tuple[EvidenceRef, ...] = ()
+    search: CounterEvidenceSearch | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def parse_legacy_absence_conservatively(cls, data: Any) -> Any:
+        if isinstance(data, dict) and data.get("outcome") == "absent":
+            values = dict(data)
+            values["outcome"] = CounterTestOutcome.UNKNOWN
+            return values
+        return data
+
+    @model_validator(mode="after")
+    def validate_search_claim(self) -> CounterTest:
+        if self.outcome == CounterTestOutcome.SEARCHED_ABSENT and self.search is None:
+            raise ValueError("searched_absent requires counter-evidence search metadata")
+        return self
+
+
+class AdmissionSignals(ImmutableModel):
+    """Facts consumed by admission, without embedding admission policy."""
+
+    conflicting_evidence: bool = False
+    material_uncertainty: bool = False
+    accounting_judgement: bool = False
+    incomplete_supporting_evidence: bool = False
+
+
+class ReplayInput(ImmutableModel):
+    name: str = Field(min_length=1)
+    value: str
+
+
+class ReplayBinding(ImmutableModel):
+    name: str = Field(min_length=1)
+    evidence_id: UUID
+
+
+class ReplaySpecification(ImmutableModel):
+    """Complete identity and inputs required to reproduce a deterministic run."""
+
+    engagement_id: str = Field(min_length=1)
+    run_id: str = Field(min_length=1)
+    control_id: str = Field(min_length=1)
+    control_version: str = Field(min_length=1)
+    runtime_version: str = Field(min_length=1)
+    inputs: tuple[ReplayInput, ...] = ()
+    evidence_ids: tuple[UUID, ...] = ()
+    bindings: tuple[ReplayBinding, ...] = ()
+
+    @field_validator("evidence_ids")
+    @classmethod
+    def canonical_replay_evidence(cls, value: tuple[UUID, ...]) -> tuple[UUID, ...]:
+        return tuple(sorted(set(value), key=str))
+
+    @field_validator("inputs")
+    @classmethod
+    def canonical_inputs(cls, value: tuple[ReplayInput, ...]) -> tuple[ReplayInput, ...]:
+        return tuple(sorted(value, key=lambda item: (item.name, item.value)))
+
+    @field_validator("bindings")
+    @classmethod
+    def canonical_bindings(
+        cls, value: tuple[ReplayBinding, ...]
+    ) -> tuple[ReplayBinding, ...]:
+        return tuple(sorted(value, key=lambda item: (item.name, str(item.evidence_id))))
+
+
+class AdmissionReasonCode(StrEnum):
+    """Stable reason identifiers; display text is deliberately not policy input."""
+
+    EVIDENCE_AND_CONTROLS_SUPPORT = "evidence_and_controls_support"
+    COUNTER_EVIDENCE_PRESENT = "counter_evidence_present"
+    COUNTER_EVIDENCE_CONFLICTING = "counter_evidence_conflicting"
+    COUNTER_TEST_INCOMPLETE = "counter_test_incomplete"
+    MATERIAL_UNCERTAINTY = "material_uncertainty"
+    ACCOUNTING_JUDGEMENT = "accounting_judgement"
+    SUPPORTING_EVIDENCE_INCOMPLETE = "supporting_evidence_incomplete"
+    EVIDENCE_CHAIN_MISSING = "evidence_chain_missing"
+    CALCULATION_SUPPORT_MISSING = "calculation_support_missing"
+    CONTROL_SUPPORT_MISSING = "control_support_missing"
+
+
+class AdmissionReason(ImmutableModel):
+    """Machine-readable admission explanation with optional human-facing detail."""
+
+    code: AdmissionReasonCode
+    detail: str | None = None
+    evidence_ids: tuple[UUID, ...] = ()
+
+    @field_validator("evidence_ids")
+    @classmethod
+    def canonical_reason_evidence(cls, value: tuple[UUID, ...]) -> tuple[UUID, ...]:
+        return tuple(sorted(set(value), key=str))
 
 
 class CalculationInput(ImmutableModel):
@@ -202,6 +332,8 @@ class ControlOutcome(ImmutableModel):
     evidence_refs: EvidenceList
     counter_tests: tuple[CounterTest, ...]
     uncertainty: str | None = None
+    admission_signals: AdmissionSignals = Field(default_factory=AdmissionSignals)
+    replay: ReplaySpecification | None = None
 
     @field_validator("exposure_amount", mode="before")
     @classmethod
@@ -254,6 +386,8 @@ class Case(ImmutableModel):
     financial_impact: Decimal | None = None
     uncertainty: str | None = None
     review_note: str | None = None
+    admission_reasons: tuple[AdmissionReason, ...] = ()
+    replay: ReplaySpecification | None = None
     created_at: datetime
 
     @field_validator("financial_impact", mode="before")
