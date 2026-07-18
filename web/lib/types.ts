@@ -1,5 +1,5 @@
 export type SourceFileType = "gdpdu" | "csv" | "xlsx" | "docx" | "pdf";
-export type SourceFileStatus = "parsed" | "warning" | "failed";
+export type SourceFileStatus = "parsed" | "warning" | "failed" | "skipped";
 
 export interface SourceFile {
   path: string;
