@@ -2,15 +2,19 @@
 
 from __future__ import annotations
 
+import importlib
 import io
 import zipfile
 from pathlib import Path
 
 import pytest
-from fastapi.testclient import TestClient
+from httpx import ASGITransport, AsyncClient
 
 from audit_compiler.agent import store as store_module
 from audit_compiler.api.app import app
+
+app_module = importlib.import_module("audit_compiler.api.app")
+pytestmark = pytest.mark.anyio
 
 
 @pytest.fixture(autouse=True)
@@ -18,13 +22,23 @@ def _clean_store():
     """Every test starts from an empty engagement/investigation store."""
 
     store_module.reset_store()
+    app_module._STATE["bundle"] = None
     yield
     store_module.reset_store()
+    app_module._STATE["bundle"] = None
 
 
 @pytest.fixture
-def client() -> TestClient:
-    return TestClient(app)
+def anyio_backend() -> str:
+    return "asyncio"
+
+
+@pytest.fixture
+async def client() -> AsyncClient:
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://test"
+    ) as async_client:
+        yield async_client
 
 
 def _zip_bytes(files: dict[str, str], *, top_folder: str | None = "dossier") -> bytes:
@@ -50,8 +64,8 @@ def _minimal_dossier_zip() -> bytes:
     return _zip_bytes({"invoices.csv": invoices_csv, "vendors.csv": vendors_csv})
 
 
-def test_upload_zip_happy_path(client: TestClient) -> None:
-    response = client.post(
+async def test_upload_zip_happy_path(client: AsyncClient) -> None:
+    response = await client.post(
         "/engagements/upload",
         files={"file": ("dossier.zip", _minimal_dossier_zip(), "application/zip")},
     )
@@ -62,16 +76,69 @@ def test_upload_zip_happy_path(client: TestClient) -> None:
     assert body["engagement"]["name"]
 
 
+async def test_uploads_are_isolated_and_each_source_is_parsed_once(
+    client: AsyncClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    import audit_compiler.ir.dossier as dossier_module
+
+    calls = 0
+    original = dossier_module.load_dossier
+
+    def counted(path: Path):
+        nonlocal calls
+        calls += 1
+        return original(path)
+
+    monkeypatch.setattr(dossier_module, "load_dossier", counted)
+    first = await client.post(
+        "/engagements/upload",
+        files={"file": ("first.zip", _minimal_dossier_zip(), "application/zip")},
+    )
+    second = await client.post(
+        "/engagements/upload",
+        files={"file": ("second.zip", _minimal_dossier_zip(), "application/zip")},
+    )
+    assert first.status_code == second.status_code == 200
+    first_id = first.json()["engagement_id"]
+    second_id = second.json()["engagement_id"]
+    assert first_id != second_id
+    assert calls == 2
+    store = store_module.get_store()
+    assert store.get_context(first_id) is not store.get_context(second_id)
+    assert first.json()["engagement"]["run_id"] != second.json()["engagement"]["run_id"]
+
+
+async def test_review_serialization_and_missing_case_error(client: AsyncClient) -> None:
+    app_module._STATE["bundle"] = {
+        "engagement": {"engagement_id": "eng", "run_id": "run"},
+        "cases": [{"case_id": "case-1", "reviewer_decision": None}],
+    }
+    reviewed = await client.post(
+        "/cases/case-1/review",
+        json={"decision": "request_evidence", "note": "obtain invoice"},
+    )
+    assert reviewed.status_code == 200
+    assert reviewed.json()["reviewer_decision"] == {
+        "decision": "request_evidence",
+        "note": "obtain invoice",
+    }
+    missing = await client.post("/cases/missing/review", json={"decision": "dismiss"})
+    assert missing.status_code == 404
+    assert missing.json() == {"detail": "case not found"}
+
+
 @pytest.mark.parametrize(
     "evil_name",
     ["../evil.txt", "/etc/passwd", "dossier/../../evil.txt"],
 )
-def test_upload_zip_path_traversal_rejected(client: TestClient, evil_name: str) -> None:
+async def test_upload_zip_path_traversal_rejected(
+    client: AsyncClient, evil_name: str
+) -> None:
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w") as zf:
         zf.writestr("dossier/invoices.csv", "invoice_id\nINV-1\n")
         zf.writestr(evil_name, "pwned")
-    response = client.post(
+    response = await client.post(
         "/engagements/upload",
         files={"file": ("evil.zip", buf.getvalue(), "application/zip")},
     )
@@ -81,24 +148,24 @@ def test_upload_zip_path_traversal_rejected(client: TestClient, evil_name: str) 
     assert not Path("evil.txt").exists()
 
 
-def test_unknown_investigation_id_404(client: TestClient) -> None:
-    response = client.get("/investigations/does-not-exist")
+async def test_unknown_investigation_id_404(client: AsyncClient) -> None:
+    response = await client.get("/investigations/does-not-exist")
     assert response.status_code == 404
-    response = client.post("/investigations/does-not-exist/run-next")
+    response = await client.post("/investigations/does-not-exist/run-next")
     assert response.status_code == 404
-    response = client.get("/investigations/does-not-exist/timeline")
+    response = await client.get("/investigations/does-not-exist/timeline")
     assert response.status_code == 404
 
 
-def test_full_lifecycle(client: TestClient) -> None:
-    upload = client.post(
+async def test_full_lifecycle(client: AsyncClient) -> None:
+    upload = await client.post(
         "/engagements/upload",
         files={"file": ("dossier.zip", _minimal_dossier_zip(), "application/zip")},
     )
     assert upload.status_code == 200, upload.text
     engagement_id = upload.json()["engagement_id"]
 
-    created = client.post(
+    created = await client.post(
         "/investigations",
         json={"engagement_id": engagement_id, "objective": "look for vendor fraud"},
     )
@@ -106,34 +173,34 @@ def test_full_lifecycle(client: TestClient) -> None:
     inv = created.json()
     investigation_id = inv["investigation_id"]
 
-    listing = client.get("/investigations")
+    listing = await client.get("/investigations")
     assert listing.status_code == 200
     assert any(i["investigation_id"] == investigation_id for i in listing.json()["investigations"])
 
-    ran = client.post(f"/investigations/{investigation_id}/run")
+    ran = await client.post(f"/investigations/{investigation_id}/run")
     assert ran.status_code == 200, ran.text
     ran_inv = ran.json()
     assert ran_inv["status"] in {
         "completed", "stopped", "active", "awaiting_auditor", "submitted", "dismissed",
     }
 
-    fetched = client.get(f"/investigations/{investigation_id}")
+    fetched = await client.get(f"/investigations/{investigation_id}")
     assert fetched.status_code == 200
     fetched_inv = fetched.json()
     assert fetched_inv["investigation_id"] == investigation_id
 
-    timeline = client.get(f"/investigations/{investigation_id}/timeline")
+    timeline = await client.get(f"/investigations/{investigation_id}/timeline")
     assert timeline.status_code == 200
     assert len(timeline.json()["timeline"]) > 0
 
-    graph = client.get(f"/investigations/{investigation_id}/graph")
+    graph = await client.get(f"/investigations/{investigation_id}/graph")
     assert graph.status_code == 200
     graph_body = graph.json()
     assert "nodes" in graph_body and "edges" in graph_body
 
     if fetched_inv["hypotheses"]:
         hypothesis_id = fetched_inv["hypotheses"][0]["hypothesis_id"]
-        dismissed = client.post(
+        dismissed = await client.post(
             f"/investigations/{investigation_id}/hypotheses/{hypothesis_id}/dismiss"
         )
         assert dismissed.status_code == 200, dismissed.text
@@ -141,7 +208,7 @@ def test_full_lifecycle(client: TestClient) -> None:
         hyp = next(h for h in dismissed_inv["hypotheses"] if h["hypothesis_id"] == hypothesis_id)
         assert hyp["status"] == "dismissed"
 
-        continued = client.post(
+        continued = await client.post(
             f"/investigations/{investigation_id}/hypotheses/{hypothesis_id}/continue"
         )
         assert continued.status_code == 200
@@ -150,7 +217,7 @@ def test_full_lifecycle(client: TestClient) -> None:
         )
         assert hyp["status"] == "active"
 
-        challenged = client.post(
+        challenged = await client.post(
             f"/investigations/{investigation_id}/hypotheses/{hypothesis_id}/challenge",
             json={"note": "please provide more evidence"},
         )
@@ -158,35 +225,37 @@ def test_full_lifecycle(client: TestClient) -> None:
         challenged_inv = challenged.json()
         assert "please provide more evidence" in challenged_inv["questions_for_auditor"]
 
-    message = client.post(
+    message = await client.post(
         f"/investigations/{investigation_id}/messages", json={"message": "any update?"}
     )
     assert message.status_code == 200
     assert "any update?" in message.json()["questions_for_auditor"]
 
 
-def test_sample_dossier_compiles_and_runs(client: TestClient, sample_dossier: Path) -> None:
+async def test_sample_dossier_compiles_and_runs(
+    client: AsyncClient, sample_dossier: Path
+) -> None:
     buf = io.BytesIO()
     with zipfile.ZipFile(buf, "w") as zf:
         for path in sample_dossier.rglob("*"):
             if path.is_file():
                 zf.write(path, arcname=str(path.relative_to(sample_dossier.parent)))
-    upload = client.post(
+    upload = await client.post(
         "/engagements/upload",
         files={"file": ("sample.zip", buf.getvalue(), "application/zip")},
     )
     assert upload.status_code == 200, upload.text
     engagement_id = upload.json()["engagement_id"]
 
-    created = client.post(
+    created = await client.post(
         "/investigations",
         json={"engagement_id": engagement_id, "objective": "audit vendor payments"},
     )
     assert created.status_code == 200, created.text
     investigation_id = created.json()["investigation_id"]
 
-    ran = client.post(f"/investigations/{investigation_id}/run")
+    ran = await client.post(f"/investigations/{investigation_id}/run")
     assert ran.status_code == 200, ran.text
 
-    timeline = client.get(f"/investigations/{investigation_id}/timeline")
+    timeline = await client.get(f"/investigations/{investigation_id}/timeline")
     assert len(timeline.json()["timeline"]) > 0
