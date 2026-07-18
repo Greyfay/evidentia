@@ -15,10 +15,10 @@ export default function UploadZone() {
   const objective = editedObjective ?? t("upload.objectiveDefault");
   const inputId = useId();
 
-  const handleFile = useCallback(
-    (file: File | undefined) => {
-      if (!file) return;
-      void uploadDossier(file);
+  const handleFiles = useCallback(
+    (files: FileList | null) => {
+      if (!files || files.length === 0) return;
+      void uploadDossier(Array.from(files));
     },
     [uploadDossier],
   );
@@ -109,7 +109,7 @@ export default function UploadZone() {
         onDrop={(e) => {
           e.preventDefault();
           setDragging(false);
-          handleFile(e.dataTransfer.files[0]);
+          handleFiles(e.dataTransfer.files);
         }}
         className="flex cursor-pointer flex-col items-center gap-2 border border-dashed rounded-sm px-6 py-14 text-center transition-colors"
         style={{
@@ -120,9 +120,10 @@ export default function UploadZone() {
         <input
           id={inputId}
           type="file"
-          accept=".zip"
+          multiple
+          accept=".zip,.pdf,.xlsx,.xls,.csv,.docx,.xml,.txt"
           className="sr-only"
-          onChange={(e) => handleFile(e.target.files?.[0])}
+          onChange={(e) => handleFiles(e.target.files)}
         />
         <span className="text-[15px]" style={{ fontFamily: "var(--font-display)", color: "var(--text-0)" }}>
           {uploading ? t("upload.compiling") : t("upload.dropTitle")}

@@ -20,7 +20,7 @@ try:  # load local secrets before reading env; harmless if python-dotenv/.env ab
 except ImportError:
     pass
 
-from fastapi import FastAPI, HTTPException, UploadFile
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -29,6 +29,10 @@ from audit_compiler.agent.store import get_store
 from audit_compiler.api.investigations import router as investigations_router
 from audit_compiler.compiler import CompileRequest as CompilerRequest
 from audit_compiler.compiler import CompilerService
+from audit_compiler.inventory import _FILE_TYPES
+
+# Individual source files the dossier compiler can parse, plus a packaged .zip archive.
+_SUPPORTED_UPLOAD_SUFFIXES = set(_FILE_TYPES) | {".zip"}
 
 app = FastAPI(title="Evidentia", summary="Provenance-first evidence compiler for auditors")
 app.add_middleware(
@@ -148,43 +152,76 @@ def _find_dossier_root(extract_dir: Path) -> Path:
     return extract_dir
 
 
+def _safe_dossier_name(filename: str | None) -> str:
+    """Return the bare filename, rejecting any path component that could escape the dir."""
+
+    name = Path(filename or "").name
+    if not name or name.startswith("."):
+        raise HTTPException(400, f"uploaded file has an unusable name: {filename!r}")
+    return name
+
+
+async def _stream_upload(upload: object, dest: Path, budget: list[int]) -> None:
+    """Stream one upload to ``dest``, enforcing the shared byte budget across all files."""
+
+    with dest.open("wb") as out:
+        while chunk := await upload.read(1024 * 1024):  # type: ignore[attr-defined]
+            budget[0] += len(chunk)
+            if budget[0] > _MAX_UPLOAD_BYTES:
+                raise HTTPException(400, "upload exceeds the maximum allowed size")
+            out.write(chunk)
+    await upload.close()  # type: ignore[attr-defined]
+
+
 @app.post("/engagements/upload")
-async def upload_engagement(file: UploadFile) -> dict:
-    if file.filename and not file.filename.lower().endswith(".zip"):
-        raise HTTPException(400, "only .zip uploads are supported")
+async def upload_engagement(request: Request) -> dict:
+    # Accept files under any form field name (the FE sends "files"; older clients "file").
+    # multi_items() preserves every entry when a field name repeats (multiple files).
+    form = await request.form()
+    uploads = [value for _name, value in form.multi_items() if not isinstance(value, str)]
+    if not uploads:
+        raise HTTPException(400, "no file uploaded")
 
-    with tempfile.TemporaryDirectory(prefix="evidentia-upload-") as tmp:
-        tmp_path = Path(tmp)
-        zip_path = tmp_path / "upload.zip"
-        size = 0
-        with zip_path.open("wb") as out:
-            while chunk := await file.read(1024 * 1024):
-                size += len(chunk)
-                if size > _MAX_UPLOAD_BYTES:
-                    raise HTTPException(400, "upload exceeds the maximum allowed size")
-                out.write(chunk)
-        await file.close()
+    suffixes = [Path(u.filename or "").suffix.lower() for u in uploads]
+    for upload, suffix in zip(uploads, suffixes, strict=True):
+        if suffix not in _SUPPORTED_UPLOAD_SUFFIXES:
+            raise HTTPException(400, f"unsupported file type: {upload.filename!r}")
+    if ".zip" in suffixes and len(uploads) > 1:
+        raise HTTPException(400, "a .zip archive must be uploaded on its own")
 
-        extract_dir = tmp_path / "extracted"
-        extract_dir.mkdir()
-        try:
-            with zipfile.ZipFile(zip_path) as zf:
-                _safe_extract(zf, extract_dir)
-        except zipfile.BadZipFile as exc:
-            raise HTTPException(400, "uploaded file is not a valid zip archive") from exc
+    # The dossier must outlive this request (tools run against it across many investigation
+    # steps), so it lives in its own temp dir; clean it up only if compilation never happens.
+    persist_dir = Path(tempfile.mkdtemp(prefix="evidentia-dossier-"))
+    try:
+        budget = [0]
+        with tempfile.TemporaryDirectory(prefix="evidentia-upload-") as tmp:
+            tmp_path = Path(tmp)
+            if suffixes == [".zip"]:
+                zip_path = tmp_path / "upload.zip"
+                await _stream_upload(uploads[0], zip_path, budget)
+                extract_dir = tmp_path / "extracted"
+                extract_dir.mkdir()
+                try:
+                    with zipfile.ZipFile(zip_path) as zf:
+                        _safe_extract(zf, extract_dir)
+                except zipfile.BadZipFile as exc:
+                    raise HTTPException(400, "uploaded file is not a valid zip archive") from exc
+                shutil.copytree(_find_dossier_root(extract_dir), persist_dir, dirs_exist_ok=True)
+            else:
+                # One or more individual source files are themselves the dossier.
+                for upload in uploads:
+                    await _stream_upload(
+                        upload, persist_dir / _safe_dossier_name(upload.filename), budget
+                    )
 
-        dossier_root = _find_dossier_root(extract_dir)
-
-        # The dossier must outlive this request (tools run against it across many
-        # investigation steps), so copy it out of the auto-cleaned temp dir.
-        persist_dir = Path(tempfile.mkdtemp(prefix="evidentia-dossier-"))
-        shutil.copytree(dossier_root, persist_dir, dirs_exist_ok=True)
-
-    bundle = _compile(persist_dir)
-    ctx = AgentContext.from_compiled_run(
-        persist_dir / ".admissible" / "audit.duckdb",
-        bundle["engagement"]["engagement_id"],
-        bundle["engagement"]["run_id"],
-    )
-    engagement_id = get_store().add_engagement(None, ctx, bundle)
-    return {"engagement_id": engagement_id, "engagement": bundle["engagement"]}
+        bundle = _compile(persist_dir)
+        ctx = AgentContext.from_compiled_run(
+            persist_dir / ".admissible" / "audit.duckdb",
+            bundle["engagement"]["engagement_id"],
+            bundle["engagement"]["run_id"],
+        )
+        engagement_id = get_store().add_engagement(None, ctx, bundle)
+        return {"engagement_id": engagement_id, "engagement": bundle["engagement"]}
+    except BaseException:
+        shutil.rmtree(persist_dir, ignore_errors=True)
+        raise

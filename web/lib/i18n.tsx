@@ -39,7 +39,7 @@ const STRINGS: Record<Lang, Record<string, string>> = {
 
     "upload.dropTitle": "Drop a case dossier, or choose a file",
     "upload.dropHint":
-      "A .zip of accounting exports. Every figure is parsed into an evidence record before any suspicion is raised.",
+      "A .zip of accounting exports, or individual PDF, Excel, CSV, Word or text files. Every figure is parsed into an evidence record before any suspicion is raised.",
     "upload.compiling": "Compiling dossier…",
     "upload.compilingHint": "Parsing exports into traceable evidence records.",
     "upload.ready": "Compiled — ready to investigate",
@@ -185,7 +185,7 @@ const STRINGS: Record<Lang, Record<string, string>> = {
 
     "upload.dropTitle": "Falldossier ablegen oder Datei auswählen",
     "upload.dropHint":
-      "Eine .zip mit Buchhaltungsexporten. Jede Zahl wird in einen Nachweis-Datensatz überführt, bevor ein Verdacht entsteht.",
+      "Eine .zip mit Buchhaltungsexporten oder einzelne PDF-, Excel-, CSV-, Word- oder Textdateien. Jede Zahl wird in einen Nachweis-Datensatz überführt, bevor ein Verdacht entsteht.",
     "upload.compiling": "Dossier wird verarbeitet…",
     "upload.compilingHint": "Exporte werden in nachvollziehbare Nachweis-Datensätze überführt.",
     "upload.ready": "Verarbeitet — bereit zur Untersuchung",

@@ -76,6 +76,68 @@ async def test_upload_zip_happy_path(client: AsyncClient) -> None:
     assert body["engagement"]["name"]
 
 
+_INVOICES_CSV = (
+    "invoice_id,vendor_id,amount,date\n"
+    "INV-1,VEND-1,100.00,2024-01-05\n"
+    "INV-2,VEND-2,250.00,2024-01-06\n"
+)
+_VENDORS_CSV = (
+    "vendor_id,name,created_by,approved_by\n"
+    "VEND-1,Acme,alice,alice\n"
+    "VEND-2,Beta,bob,carol\n"
+)
+
+
+async def test_upload_single_csv_file(client: AsyncClient) -> None:
+    response = await client.post(
+        "/engagements/upload",
+        files={"files": ("invoices.csv", _INVOICES_CSV, "text/csv")},
+    )
+    assert response.status_code == 200, response.text
+    body = response.json()
+    assert body["engagement_id"]
+    assert body["engagement"]["counts"]["source_files"] == 1
+
+
+async def test_upload_multiple_individual_files(client: AsyncClient) -> None:
+    response = await client.post(
+        "/engagements/upload",
+        files=[
+            ("files", ("invoices.csv", _INVOICES_CSV, "text/csv")),
+            ("files", ("vendors.csv", _VENDORS_CSV, "text/csv")),
+        ],
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["engagement"]["counts"]["source_files"] == 2
+
+
+async def test_upload_rejects_unsupported_file_type(client: AsyncClient) -> None:
+    response = await client.post(
+        "/engagements/upload",
+        files={"files": ("notes.exe", b"\x00\x01", "application/octet-stream")},
+    )
+    assert response.status_code == 400
+    assert "unsupported file type" in response.json()["detail"]
+
+
+async def test_upload_rejects_zip_mixed_with_other_files(client: AsyncClient) -> None:
+    response = await client.post(
+        "/engagements/upload",
+        files=[
+            ("files", ("dossier.zip", _minimal_dossier_zip(), "application/zip")),
+            ("files", ("invoices.csv", _INVOICES_CSV, "text/csv")),
+        ],
+    )
+    assert response.status_code == 400
+    assert "on its own" in response.json()["detail"]
+
+
+async def test_upload_rejects_empty_request(client: AsyncClient) -> None:
+    response = await client.post("/engagements/upload", data={"note": "no file here"})
+    assert response.status_code == 400
+    assert "no file uploaded" in response.json()["detail"]
+
+
 async def test_uploads_are_isolated_and_each_source_is_parsed_once(
     client: AsyncClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
