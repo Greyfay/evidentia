@@ -75,6 +75,7 @@ _CATEGORY_HINT = {
 _PLAN = {
     HypothesisCategory.VENDOR_INTEGRITY: [
         "check_vendor_creation_and_approval",
+        "find_related_entities",
         "check_user_permissions",
         "reconcile_vendor_invoices_and_payments",
         "find_contract_or_service_evidence",
@@ -154,6 +155,15 @@ _SYSTEM = (
     "appear in the provided summary. Prefer precision: require counter-evidence before confirming."
 )
 
+_ANSWER_SYSTEM = (
+    "You are the reporting voice of a forensic audit agent answering an auditor's question. "
+    "Answer ONLY from the INVESTIGATION FACTS provided. You MUST NOT invent numbers, evidence "
+    "ids, or verdicts: every figure, evidence id, and verdict you state must appear verbatim in "
+    "the facts. You may cite ONLY evidence ids listed under allowed_evidence_ids, written inline "
+    "like ev_0123456789abcdef. If the facts do not answer the question, say so plainly rather "
+    "than guessing. Be concise: 2-5 sentences."
+)
+
 
 class OpenAIPlanner:
     name = "openai"
@@ -206,6 +216,28 @@ class OpenAIPlanner:
             payload, DecisionDraft,
         )
 
+    def phrase_grounded_answer(self, question: str, facts: dict) -> str:
+        """Phrase a grounded answer to an auditor's question over ``facts`` only.
+
+        Free-text, not schema-parsed: the answer is prose. The system prompt forbids
+        inventing any figure, evidence id, or verdict; the caller additionally strips any
+        cited evidence id that is not in ``facts['allowed_evidence_ids']``, so a stray id
+        can never survive into the returned answer.
+        """
+
+        context = json.dumps(facts)[:12000]
+        completion = self._client.chat.completions.create(
+            model=self._model,
+            messages=[
+                {"role": "system", "content": _ANSWER_SYSTEM},
+                {
+                    "role": "user",
+                    "content": f"QUESTION:\n{question}\n\nINVESTIGATION FACTS:\n{context}",
+                },
+            ],
+        )
+        return (completion.choices[0].message.content or "").strip()
+
 
 class HybridPlanner:
     """OpenAI decides *what* to investigate; deterministic plans decide *how*.
@@ -241,6 +273,9 @@ class HybridPlanner:
 
     def decide(self, hypothesis, observations):  # noqa: ANN001
         return self._deterministic.decide(hypothesis, observations)
+
+    def phrase_grounded_answer(self, question: str, facts: dict) -> str:
+        return self._openai.phrase_grounded_answer(question, facts)
 
 
 def get_planner(*, model: str | None = None) -> Planner:

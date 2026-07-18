@@ -1,4 +1,10 @@
-import type { EngagementSummary, Investigation, InvestigationGraph, TimelineEvent } from "./investigation-types";
+import type {
+  EngagementSummary,
+  EvidenceView,
+  Investigation,
+  InvestigationGraph,
+  TimelineEvent,
+} from "./investigation-types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
@@ -19,6 +25,18 @@ async function fetchWithTimeout(
 async function json<T>(res: Response): Promise<T> {
   if (!res.ok) throw new Error(`API ${res.status}`);
   return res.json() as Promise<T>;
+}
+
+export interface AgentStatus {
+  mode: "live" | "partial" | "fallback";
+  planner: string;
+  openai: { active: boolean; model: string | null };
+  cognee: { active: boolean };
+}
+
+export async function getAgentStatus(): Promise<AgentStatus> {
+  const res = await fetch(`${API_BASE}/agent-status`, { cache: "no-store" });
+  return json(res);
 }
 
 export async function uploadEngagement(
@@ -69,6 +87,17 @@ export async function getTimeline(id: string): Promise<TimelineEvent[]> {
 
 export async function getGraph(id: string): Promise<InvestigationGraph> {
   const res = await fetch(`${API_BASE}/investigations/${id}/graph`, { cache: "no-store" });
+  return json(res);
+}
+
+export async function getInvestigationEvidence(
+  investigationId: string,
+  evidenceId: string,
+): Promise<EvidenceView> {
+  const res = await fetch(
+    `${API_BASE}/investigations/${investigationId}/evidence/${evidenceId}`,
+    { cache: "no-store" },
+  );
   return json(res);
 }
 

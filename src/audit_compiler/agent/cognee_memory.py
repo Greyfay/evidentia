@@ -280,6 +280,26 @@ class CogneeMemory:
             GraphEdge(source_id=src, target_id=dst, relationship=rel, attributes=dict(attributes))
         )
 
+    def seed_entity_local(
+        self, entity_id: str, kind: NodeKind = NodeKind.ENTITY, **props: Any
+    ) -> None:
+        """Write an entity to the local mirror only — no cloud round-trip.
+
+        For latency-sensitive seeding inside the agent loop, where the cloud
+        `add_text`/`cognify` pipeline is too slow to block on. The cloud path is
+        still exercised by the read side (`related_entities`'s live search)."""
+
+        self._graph.add_node(GraphNode(node_id=entity_id, kind=kind, attributes=dict(props)))
+
+    def seed_link_local(
+        self, src: str, rel: RelationshipKind, dst: str, **attributes: Any
+    ) -> None:
+        """Write a directed edge to the local mirror only — no cloud round-trip."""
+
+        self._graph.add_edge(
+            GraphEdge(source_id=src, target_id=dst, relationship=rel, attributes=dict(attributes))
+        )
+
     # -- queries ----------------------------------------------------------------
 
     def related_entities(self, entity_id: str, hops: int = 2) -> dict:

@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLang, type Lang } from "@/lib/i18n";
 
 export default function AppHeader() {
   const pathname = usePathname();
+  const { t } = useLang();
 
   return (
     <div
@@ -27,17 +29,51 @@ export default function AppHeader() {
             />
           </Link>
           <nav className="flex items-center gap-4 text-[11.5px] tracking-[0.04em]">
-            <NavLink href="/" label="Case board" active={pathname === "/"} />
-            <NavLink href="/investigate" label="Investigate" active={pathname?.startsWith("/investigate") ?? false} />
+            <NavLink href="/" label={t("nav.caseBoard")} active={pathname === "/"} />
+            <NavLink href="/investigate" label={t("nav.investigate")} active={pathname?.startsWith("/investigate") ?? false} />
           </nav>
         </div>
-        <p
-          className="text-[10.5px] tracking-[0.04em] font-mono truncate"
-          style={{ color: "var(--text-2)" }}
-        >
-          Models understand. Code verifies. Auditors decide.
-        </p>
+        <div className="flex items-center gap-4">
+          <p
+            className="hidden md:block text-[10.5px] tracking-[0.04em] font-mono truncate"
+            style={{ color: "var(--text-2)" }}
+          >
+            {t("nav.tagline")}
+          </p>
+          <LanguageToggle />
+        </div>
       </div>
+    </div>
+  );
+}
+
+function LanguageToggle() {
+  const { lang, setLang, t } = useLang();
+  const options: Lang[] = ["en", "de"];
+  return (
+    <div
+      role="group"
+      aria-label={t("lang.aria")}
+      className="flex items-center overflow-hidden rounded-sm border"
+      style={{ borderColor: "var(--hairline-strong)" }}
+    >
+      {options.map((opt) => {
+        const active = lang === opt;
+        return (
+          <button
+            key={opt}
+            onClick={() => setLang(opt)}
+            aria-pressed={active}
+            className="px-2 py-1 text-[10.5px] font-semibold tracking-[0.1em] uppercase transition-colors"
+            style={{
+              color: active ? "var(--ink-0)" : "var(--text-2)",
+              background: active ? "var(--amber)" : "transparent",
+            }}
+          >
+            {opt}
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -58,7 +58,7 @@ _VERDICT_TO_STATUS = {
 @dataclass
 class InvestigationLimits:
     max_hypotheses: int = 5
-    max_steps: int = 16
+    max_steps: int = 20
     max_tool_calls: int = 28
     max_seconds: float = 120.0
 
@@ -172,7 +172,9 @@ def run_next_step(
     args = _normalise_args(tool_name, args)
     # Only target a subject the loop actually discovered (or an auditor pre-seeded); never a
     # model guess. Vendor discovery runs generically until a real subject is captured.
-    if hyp.subject and "vendor_id" not in args and tool_name != "submit_case_to_admission":
+    if hyp.subject and tool_name in _COGNEE_ENTITY_TOOLS:
+        args["entity_id"] = hyp.subject
+    elif hyp.subject and "vendor_id" not in args and tool_name != "submit_case_to_admission":
         args["vendor_id"] = hyp.subject
     if tool_name == "submit_case_to_admission":
         args["subject"] = hyp.subject
@@ -199,6 +201,8 @@ def run_next_step(
 
     action = PlannedAction(tool_name=tool_name, reason=draft.reason, arguments=args,
                            status=ActionStatus.RUNNING)
+    if tool_name in _COGNEE_ENTITY_TOOLS:
+        _seed_investigation_memory(inv, hyp)
     result = tool_registry.run_tool(ctx, tool_name, args)
     action.status = ActionStatus.COMPLETED if result.ok else ActionStatus.FAILED
 
@@ -270,6 +274,34 @@ _REFUTER_TOOLS = {
     "find_reversal", "find_credit_note", "find_independent_approval",
     "find_contract_or_service_evidence", "compare_peer_vendors",
 }
+# Cognee-backed relationship tools target an entity id (not a vendor_id) and read the
+# investigation memory graph, so the loop seeds that graph from the discovered subject
+# before they run.
+_COGNEE_ENTITY_TOOLS = {"find_related_entities"}
+
+
+def _seed_investigation_memory(inv: Investigation, hyp: Hypothesis) -> None:
+    """Best-effort: mirror the discovered subject and its evidence into the Cognee memory
+    graph so the relationship tools have real edges to return. Never raises, and a few
+    bounded writes only — the local mirror is authoritative, the cloud sync is best-effort."""
+
+    if not hyp.subject:
+        return
+    try:
+        from audit_compiler.agent.cognee_memory import get_memory
+        from audit_compiler.graph.interface import NodeKind, RelationshipKind
+
+        memory = get_memory()
+        memory.seed_entity_local(str(hyp.hypothesis_id), kind=NodeKind.HYPOTHESIS,
+                                 claim=hyp.claim, category=hyp.category.value)
+        memory.seed_entity_local(hyp.subject, kind=NodeKind.ENTITY, role="subject",
+                                 category=hyp.category.value)
+        memory.seed_link_local(str(hyp.hypothesis_id), RelationshipKind.AFFECTS, hyp.subject)
+        for evidence_id in hyp.supporting_evidence_ids[:3]:
+            memory.seed_entity_local(evidence_id, kind=NodeKind.EVIDENCE_REF)
+            memory.seed_link_local(hyp.subject, RelationshipKind.SUPPORTED_BY, evidence_id)
+    except Exception:  # noqa: BLE001 - memory seeding is a best-effort aid, never a hard failure
+        pass
 _CATEGORY_CONTROL = {
     HypothesisCategory.VENDOR_INTEGRITY: "vendor_sod",
     HypothesisCategory.SPLIT_PAYMENT: "split_payment",

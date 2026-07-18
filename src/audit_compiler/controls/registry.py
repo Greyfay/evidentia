@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from audit_compiler.controls.anomaly_discovery import AnomalyDiscoveryControl
 from audit_compiler.controls.base import ControlContext, DossierControl, Finding
 from audit_compiler.controls.capitalisation import CapitalisationControl
 from audit_compiler.controls.cutoff import CutoffControl
@@ -12,13 +13,20 @@ METHODOLOGY_VERSION = "generic-controls@0.1.0"
 
 
 def default_controls() -> list[DossierControl]:
-    """Return the four generic controls in methodology order."""
+    """Return the methodology controls in order.
+
+    The four targeted controls run first, then the generic anomaly-discovery scanner. The
+    latter only ever emits admission ``HUMAN_REVIEW`` leads (each finding carries a required,
+    unrunnable counter-test), so it never changes the confirmed/dismissed verdicts of the
+    four targeted controls -- it only surfaces additional leads for the auditor.
+    """
 
     return [
         VendorSoDControl(),
         SplitPaymentControl(),
         CapitalisationControl(),
         CutoffControl(),
+        AnomalyDiscoveryControl(),
     ]
 
 

@@ -1,5 +1,9 @@
 """Deterministic audit control frameworks and built-in record controls."""
 
+from audit_compiler.controls.anomaly_discovery import (
+    AnomalyDiscoveryControl,
+    AnomalyParameters,
+)
 from audit_compiler.controls.base import (
     CalcInput,
     Calculation,
@@ -32,6 +36,20 @@ from audit_compiler.controls.capitalization import (
     FixedAssetAdditionRecord,
     GeneralLedgerPostingRecord,
 )
+from audit_compiler.controls.cutoff import (
+    AdjustmentKind,
+    ClosingBalanceRecord,
+    ClosingRecordKind,
+    CutoffAdjustmentRecord,
+    CutoffInvoiceRecord,
+    CutoffOutcome,
+    CutoffParameters,
+    CutoffPolicyExceptionRecord,
+    MatchField,
+    ReceiptStatus,
+    ServiceReceiptRecord,
+    YearEndCutoffControl,
+)
 from audit_compiler.controls.split_payments import (
     PaymentRecord,
     SplitPaymentControl,
@@ -58,6 +76,8 @@ from audit_compiler.controls.vendor_integrity import (
 
 __all__ = [
     "AccountClassification",
+    "AnomalyDiscoveryControl",
+    "AnomalyParameters",
     "ApprovalLogRecord",
     "AssetDescriptionRecord",
     "CalcInput",
@@ -72,12 +92,20 @@ __all__ = [
     "CapitalizationSupportKind",
     "CapitalizationSupportRecord",
     "CapitalizationVocabulary",
+    "AdjustmentKind",
+    "ClosingBalanceRecord",
+    "ClosingRecordKind",
     "Control",
     "ControlContext",
     "ControlOutcome",
     "CounterTest",
     "CounterTestResult",
     "CounterTestStatus",
+    "CutoffAdjustmentRecord",
+    "CutoffInvoiceRecord",
+    "CutoffOutcome",
+    "CutoffParameters",
+    "CutoffPolicyExceptionRecord",
     "DossierControl",
     "EvidenceStep",
     "Finding",
@@ -86,10 +114,13 @@ __all__ = [
     "OutcomeStatus",
     "OutgoingPaymentRecord",
     "PaymentRecord",
+    "MatchField",
     "PermissionKind",
     "PriorVendorHistoryRecord",
     "PurchaseKind",
     "RuleParameters",
+    "ReceiptStatus",
+    "ServiceReceiptRecord",
     "SplitPaymentControl",
     "SplitPaymentParameters",
     "SupportingEvidence",
@@ -104,4 +135,5 @@ __all__ = [
     "VendorSignal",
     "VendorSignalType",
     "VendorSupportingEvidenceRecord",
+    "YearEndCutoffControl",
 ]
