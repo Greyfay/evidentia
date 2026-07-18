@@ -13,13 +13,10 @@ import csv
 import io
 from dataclasses import dataclass
 from pathlib import Path
-from uuid import NAMESPACE_URL, uuid5
 
 from audit_compiler.adapters.gdpdu import compile_gdpdu_dossier
 from audit_compiler.inventory import inventory_dossier, sha256_file
-from audit_compiler.models import DataLocale, EvidenceRef, SourceType
-
-_EVIDENCE_NAMESPACE = uuid5(NAMESPACE_URL, "evidentia/source-evidence")
+from audit_compiler.models import EvidenceRef, SourceType
 
 
 @dataclass(frozen=True)
@@ -45,12 +42,7 @@ class SourceTable:
             cell = f"{_column_letter(self.columns.index(column))}{self.row_numbers[index]}"
         page = self.page_numbers[index] if self.page_numbers else None
         passage = raw_value[:200] if self.source_type is SourceType.PDF_PASSAGE else None
-        locator = (
-            f"{self.file_sha256}:{self.source_path}:{self.sheet or ''}:"
-            f"{self.row_numbers[index]}:{column}:{page or ''}"
-        )
         return EvidenceRef(
-            evidence_id=uuid5(_EVIDENCE_NAMESPACE, locator),
             source_path=self.source_path,
             source_type=self.source_type,
             file_sha256=self.file_sha256,
@@ -205,7 +197,6 @@ class LoadedDossier:
     """Every parsed source table plus the raw file manifest and per-file warnings."""
 
     root: Path
-    locale: DataLocale
     tables: tuple[SourceTable, ...]
     warnings: tuple[tuple[str, str], ...]  # (source_path, message)
 
@@ -215,13 +206,10 @@ class LoadedDossier:
         return [t for t in self.tables if required.issubset(set(t.columns))]
 
 
-def load_dossier(
-    directory: Path, *, locale: DataLocale | str = DataLocale.DE
-) -> LoadedDossier:
+def load_dossier(directory: Path) -> LoadedDossier:
     """Parse every supported file in a dossier into provenance-bearing source tables."""
 
     root = directory.expanduser().resolve()
-    explicit_locale = DataLocale(locale)
     manifest = inventory_dossier(root)
     tables: list[SourceTable] = []
     warnings: list[tuple[str, str]] = []
@@ -280,9 +268,4 @@ def load_dossier(
             continue
         tables.extend(result if isinstance(result, list) else [result])
 
-    return LoadedDossier(
-        root=root,
-        locale=explicit_locale,
-        tables=tuple(tables),
-        warnings=tuple(warnings),
-    )
+    return LoadedDossier(root=root, tables=tuple(tables), warnings=tuple(warnings))

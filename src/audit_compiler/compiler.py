@@ -2,13 +2,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
-from uuid import NAMESPACE_URL, UUID, uuid5
 
-import duckdb
 from pydantic import Field
 
 from audit_compiler.adapters.gdpdu import (
@@ -19,18 +16,13 @@ from audit_compiler.adapters.gdpdu import (
 from audit_compiler.adapters.xlsx import parse_xlsx_workbook
 from audit_compiler.duckdb_store import (
     connect,
-    engagement_run,
-    store_canonical_events,
     store_parse_reconciliation,
     store_parsed_table,
-    store_run_source_files,
     store_source_files,
     store_xlsx_workbook,
 )
 from audit_compiler.inventory import SourceFile, inventory_dossier
-from audit_compiler.ir.canonical import map_canonical_events
-from audit_compiler.ir.dossier import LoadedDossier, load_dossier
-from audit_compiler.models import DataLocale, EngagementIdentity, FinancialEvent, ImmutableModel
+from audit_compiler.models import ImmutableModel
 
 
 class ParsingStatus(StrEnum):
@@ -78,28 +70,15 @@ class SourceCompilationReport(ImmutableModel):
 
 class CompilationReport(ImmutableModel):
     schema_version: str = "1.0"
-    engagement_id: UUID
-    run_id: UUID
-    locale: DataLocale
     compiled_at: datetime
     database_path: str
     discovered_files: tuple[SourceFile, ...]
     parsing_status: ParsingStatus
     source_row_count: int = Field(ge=0)
     parsed_row_count: int = Field(ge=0)
-    canonical_event_count: int = Field(default=0, ge=0)
     sources: tuple[SourceCompilationReport, ...]
     warnings: tuple[CompilationIssue, ...] = ()
     errors: tuple[CompilationIssue, ...] = ()
-
-
-@dataclass(frozen=True, slots=True)
-class CompilationRuntime:
-    """Canonical output shared by CLI, API, controls, and storage consumers."""
-
-    report: CompilationReport
-    dossier: LoadedDossier
-    events: tuple[FinancialEvent, ...]
 
 
 def _relative_database_path(database: Path, dossier_root: Path) -> str | None:
@@ -120,27 +99,23 @@ def _issue_from_parse_error(error: DelimitedParseError) -> CompilationIssue:
     )
 
 
-def _compile_sources(
-    connection: duckdb.DuckDBPyConnection,
-    root: Path,
-    database_path: Path,
-    *,
-    identity: EngagementIdentity,
-    run_id: UUID,
+def compile_dossier(
+    dossier_directory: Path, *, database: Path | None = None
 ) -> CompilationReport:
-    """Compile native sources on an existing run transaction."""
+    """Compile every GDPdU-declared source and continue reporting after source failures."""
 
+    root = dossier_directory.expanduser().resolve()
+    if not root.is_dir():
+        raise NotADirectoryError(f"dossier path is not a directory: {dossier_directory}")
+    database_path = (database or root / ".admissible" / "admissible.duckdb").expanduser().resolve()
     manifest = inventory_dossier(root)
     database_relative = _relative_database_path(database_path, root)
-    database_artifacts = (
-        {database_relative, f"{database_relative}.wal"}
-        if database_relative is not None
-        else set()
-    )
     discovered_files = tuple(
-        source for source in manifest.files if source.path not in database_artifacts
+        source for source in manifest.files if source.path != database_relative
     )
 
+    database_path.parent.mkdir(parents=True, exist_ok=True)
+    connection = connect(database_path)
     store_source_files(connection, discovered_files)
 
     source_reports: list[SourceCompilationReport] = []
@@ -154,11 +129,7 @@ def _compile_sources(
         if source.file_type != "xlsx":
             continue
         try:
-            workbook = parse_xlsx_workbook(
-                root / source.path,
-                dossier_root=root,
-                locale=identity.locale.value,
-            )
+            workbook = parse_xlsx_workbook(root / source.path, dossier_root=root)
             stored_count = store_xlsx_workbook(connection, workbook)
             workbook_source_rows = sum(sheet.max_row for sheet in workbook.sheets)
             sheet_reports: list[SheetCompilationReport] = []
@@ -404,6 +375,7 @@ def _compile_sources(
             )
         )
 
+    connection.close()
     successful = sum(report.parsing_status == ParsingStatus.SUCCESS for report in source_reports)
     status = (
         ParsingStatus.SUCCESS
@@ -413,9 +385,6 @@ def _compile_sources(
         else ParsingStatus.FAILED
     )
     return CompilationReport(
-        engagement_id=identity.engagement_id,
-        run_id=run_id,
-        locale=identity.locale,
         compiled_at=datetime.now(UTC),
         database_path=str(database_path),
         discovered_files=discovered_files,
@@ -426,69 +395,3 @@ def _compile_sources(
         warnings=tuple(warnings),
         errors=tuple(errors),
     )
-
-
-def compile_runtime(
-    dossier_directory: Path,
-    *,
-    database: Path | None = None,
-    name: str | None = None,
-    locale: DataLocale | str = DataLocale.DE,
-    engagement_id: UUID | None = None,
-) -> CompilationRuntime:
-    """Compile one isolated run and return the canonical in-memory and stored forms."""
-
-    root = dossier_directory.expanduser().resolve()
-    if not root.is_dir():
-        raise NotADirectoryError(f"dossier path is not a directory: {dossier_directory}")
-    database_path = (
-        database or root / ".admissible" / "admissible.duckdb"
-    ).expanduser().resolve()
-    database_path.parent.mkdir(parents=True, exist_ok=True)
-    explicit_locale = DataLocale(locale)
-    stable_id = engagement_id or uuid5(NAMESPACE_URL, f"evidentia:{root.as_posix()}")
-    identity = EngagementIdentity(
-        engagement_id=stable_id,
-        name=name or root.name,
-        dossier_root=root.as_posix(),
-        locale=explicit_locale,
-    )
-    connection = connect(database_path)
-    try:
-        with engagement_run(connection, identity) as run_id:
-            report = _compile_sources(
-                connection,
-                root,
-                database_path,
-                identity=identity,
-                run_id=run_id,
-            )
-            dossier = load_dossier(root, locale=explicit_locale)
-            events = map_canonical_events(dossier)
-            report = report.model_copy(
-                update={"canonical_event_count": len(events)}
-            )
-            store_run_source_files(connection, run_id, report.discovered_files)
-            store_canonical_events(connection, run_id, events)
-        return CompilationRuntime(report=report, dossier=dossier, events=events)
-    finally:
-        connection.close()
-
-
-def compile_dossier(
-    dossier_directory: Path,
-    *,
-    database: Path | None = None,
-    name: str | None = None,
-    locale: DataLocale | str = DataLocale.DE,
-    engagement_id: UUID | None = None,
-) -> CompilationReport:
-    """Backward-compatible report API over the canonical compiler runtime."""
-
-    return compile_runtime(
-        dossier_directory,
-        database=database,
-        name=name,
-        locale=locale,
-        engagement_id=engagement_id,
-    ).report
