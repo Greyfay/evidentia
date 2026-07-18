@@ -24,6 +24,7 @@ export const STATUS_META: Record<
   parsed: { label: "Parsed", color: "var(--forest)" },
   warning: { label: "Warning", color: "var(--amber)" },
   failed: { label: "Failed", color: "var(--brick)" },
+  skipped: { label: "Skipped", color: "var(--slate)" },
 };
 
 export const COUNTER_TEST_META: Record<

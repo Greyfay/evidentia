@@ -9,6 +9,8 @@ const TYPE_LABEL: Record<string, string> = {
   pdf: "PDF",
 };
 
+const UNKNOWN_STATUS = { label: "Unknown", color: "var(--slate)" };
+
 export default function SourceFileTable({ files }: { files: SourceFile[] }) {
   return (
     <div className="overflow-x-auto border rounded-sm" style={{ borderColor: "var(--hairline)" }}>
@@ -28,7 +30,7 @@ export default function SourceFileTable({ files }: { files: SourceFile[] }) {
         </thead>
         <tbody>
           {files.map((f) => {
-            const status = STATUS_META[f.status];
+            const status = STATUS_META[f.status] ?? UNKNOWN_STATUS;
             const mismatch = f.source_rows !== f.parsed_rows;
             return (
               <tr
