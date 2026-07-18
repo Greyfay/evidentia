@@ -202,14 +202,55 @@ class OpenAIPlanner:
         )
 
 
+class HybridPlanner:
+    """OpenAI decides *what* to investigate; deterministic plans decide *how*.
+
+    Hypotheses (the interpretive, judgement-heavy step) come from OpenAI and are then
+    guaranteed to cover every available control category. Tool selection and decisions use
+    the deterministic per-category plan, so execution is reliable and every arithmetic step
+    still runs in a deterministic tool. This is the "OpenAI plans, code verifies" split.
+    """
+
+    name = "hybrid"
+
+    def __init__(self, openai_planner: OpenAIPlanner) -> None:
+        self._openai = openai_planner
+        self._deterministic = DeterministicPlanner()
+
+    def propose_hypotheses(self, summary: dict) -> list[HypothesisDraft]:
+        try:
+            llm_drafts = self._openai.propose_hypotheses(summary)
+        except Exception:  # noqa: BLE001 - fall back to deterministic hypotheses on any error
+            llm_drafts = []
+        by_category: dict[HypothesisCategory, HypothesisDraft] = {}
+        for draft in llm_drafts:
+            if draft.category is not HypothesisCategory.OTHER:
+                by_category.setdefault(draft.category, draft)
+        for draft in self._deterministic.propose_hypotheses(summary):
+            by_category.setdefault(draft.category, draft)
+        return sorted(by_category.values(), key=lambda d: d.priority, reverse=True)[:5]
+
+    def next_action(self, objective, hypothesis, completed_tools, available_tools, summary):  # noqa: ANN001
+        return self._deterministic.next_action(
+            objective, hypothesis, completed_tools, available_tools, summary)
+
+    def decide(self, hypothesis, observations):  # noqa: ANN001
+        return self._deterministic.decide(hypothesis, observations)
+
+
 def get_planner(*, model: str | None = None) -> Planner:
-    """Return the OpenAI planner when a key is configured, else the deterministic planner."""
+    """Return the hybrid planner when an OpenAI key is configured, else deterministic.
+
+    Hybrid keeps OpenAI genuinely in the investigation path (hypothesis generation and
+    ranking) while deterministic tools stay authoritative for execution and arithmetic.
+    """
 
     api_key = os.environ.get("OPENAI_API_KEY")
     if api_key:
         try:
-            return OpenAIPlanner(api_key=api_key, model=model or os.environ.get(
-                "OPENAI_MODEL", "gpt-4o-mini"))
+            openai_planner = OpenAIPlanner(
+                api_key=api_key, model=model or os.environ.get("OPENAI_MODEL", "gpt-4o-mini"))
+            return HybridPlanner(openai_planner)
         except Exception:  # noqa: BLE001 - never let planner init break the pipeline
             return DeterministicPlanner()
     return DeterministicPlanner()

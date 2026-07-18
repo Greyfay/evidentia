@@ -131,6 +131,7 @@ class Hypothesis(_Model):
     candidate_exposure: Decimal | None = None
     next_actions: list[str] = Field(default_factory=list)
     verdict_recommendation: VerdictRecommendation = VerdictRecommendation.UNDECIDED
+    subject: str = ""  # opaque id the investigation centres on (e.g. a vendor account)
 
     _no_float = field_validator("candidate_exposure", mode="before")(_reject_float)
 
@@ -146,6 +147,7 @@ class Investigation(_Model):
     evidence_ids: list[str] = Field(default_factory=list)
     contradicting_evidence_ids: list[str] = Field(default_factory=list)
     questions_for_auditor: list[str] = Field(default_factory=list)
+    timeline: list[dict] = Field(default_factory=list)
     created_at: datetime
     updated_at: datetime
 
