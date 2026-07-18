@@ -1,5 +1,9 @@
 """Deterministic audit control frameworks and built-in record controls."""
 
+from audit_compiler.controls.anomaly_discovery import (
+    AnomalyDiscoveryControl,
+    AnomalyParameters,
+)
 from audit_compiler.controls.base import (
     CalcInput,
     Calculation,
@@ -72,6 +76,8 @@ from audit_compiler.controls.vendor_integrity import (
 
 __all__ = [
     "AccountClassification",
+    "AnomalyDiscoveryControl",
+    "AnomalyParameters",
     "ApprovalLogRecord",
     "AssetDescriptionRecord",
     "CalcInput",
