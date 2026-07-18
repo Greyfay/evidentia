@@ -26,10 +26,12 @@ export async function getAgentStatus(): Promise<AgentStatus> {
 }
 
 export async function uploadEngagement(
-  file: File,
+  files: File[],
 ): Promise<{ engagement_id: string; engagement: EngagementSummary }> {
   const form = new FormData();
-  form.append("file", file);
+  // A single .zip is a packaged dossier; otherwise each file is an individual source
+  // (PDF, Excel, CSV, …). The API accepts one or many under the "files" field.
+  for (const file of files) form.append("files", file);
   const res = await fetch(`${API_BASE}/engagements/upload`, { method: "POST", body: form });
   return json(res);
 }

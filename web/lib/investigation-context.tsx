@@ -30,7 +30,7 @@ const EMPTY_GRAPH: InvestigationGraph = { nodes: [], edges: [], available: false
 // Latest-value ref of each operation, so a failed request's "retry" can re-run
 // it without a callback referencing itself (which the hooks linter rejects).
 type Ops = {
-  uploadDossier: (file: File) => void;
+  uploadDossier: (files: File[]) => void;
   startInvestigation: (objective: string) => void;
   runNextStep: () => void;
   runToCompletion: () => void;
@@ -54,7 +54,7 @@ interface InvestigationContextValue {
   clearError: () => void;
   selectedHypothesisId: string | null;
   selectHypothesis: (id: string) => void;
-  uploadDossier: (file: File) => Promise<void>;
+  uploadDossier: (files: File[]) => Promise<void>;
   startInvestigation: (objective: string) => Promise<void>;
   runNextStep: () => Promise<void>;
   runToCompletion: () => Promise<void>;
@@ -194,7 +194,8 @@ export function InvestigationProvider({ children }: { children: React.ReactNode 
   );
 
   const uploadDossier = useCallback(
-    async (file: File) => {
+    async (files: File[]) => {
+      if (files.length === 0) return;
       setUploading(true);
       clearError();
       try {
@@ -202,10 +203,10 @@ export function InvestigationProvider({ children }: { children: React.ReactNode 
           setEngagement(fixture.engagement);
           return;
         }
-        const result = await api.uploadEngagement(file);
+        const result = await api.uploadEngagement(files);
         setEngagement({ ...result.engagement, engagement_id: result.engagement_id });
       } catch {
-        fail("error.upload", () => opsRef.current.uploadDossier?.(file));
+        fail("error.upload", () => opsRef.current.uploadDossier?.(files));
       } finally {
         setUploading(false);
       }
