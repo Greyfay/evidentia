@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState,
@@ -25,6 +26,7 @@ const fixture = fixtureRaw as unknown as InvestigationFixture;
 
 interface InvestigationContextValue {
   usingFallback: boolean;
+  agentStatus: api.AgentStatus | null;
   engagement: EngagementSummary | null;
   investigation: Investigation | null;
   uploading: boolean;
@@ -82,7 +84,22 @@ function cannedReply(message: string): string {
 
 export function InvestigationProvider({ children }: { children: React.ReactNode }) {
   const [usingFallback, setUsingFallback] = useState(false);
+  const [agentStatus, setAgentStatus] = useState<api.AgentStatus | null>(null);
   const [engagement, setEngagement] = useState<EngagementSummary | null>(null);
+
+  // Probe the backend once so the UI can show whether the agent is running live
+  // (OpenAI + Cognee), partial, or in deterministic fallback. Best-effort: if the
+  // API is unreachable the badge simply stays absent and the fallback banner shows.
+  useEffect(() => {
+    let cancelled = false;
+    api.getAgentStatus().then(
+      (s) => !cancelled && setAgentStatus(s),
+      () => !cancelled && setAgentStatus(null),
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const [investigation, setInvestigation] = useState<Investigation | null>(null);
   const [uploading, setUploading] = useState(false);
   const [starting, setStarting] = useState(false);
@@ -117,7 +134,7 @@ export function InvestigationProvider({ children }: { children: React.ReactNode 
     setError(null);
     try {
       const result = await api.uploadEngagement(file);
-      setEngagement(result.engagement);
+      setEngagement({ ...result.engagement, engagement_id: result.engagement_id });
       setUsingFallback(false);
     } catch {
       setEngagement({ ...fixture.engagement, name: `${file.name} (demo fixture — API unreachable)` });
@@ -250,7 +267,9 @@ export function InvestigationProvider({ children }: { children: React.ReactNode 
   );
 
   const graph = useMemo<InvestigationGraph>(() => {
-    if (fixture.graph.nodes.length) return fixture.graph;
+    // Only the demo fixture graph in fallback mode; live investigations build their
+    // own graph from real hypotheses + evidence so no sample data leaks into live mode.
+    if (usingFallback && fixture.graph.nodes.length) return fixture.graph;
     if (!investigation) return { nodes: [], edges: [] };
     const h = investigation.hypotheses.find((x) => x.hypothesis_id === selectedHypothesisId);
     if (!h) return { nodes: [], edges: [] };
@@ -260,7 +279,7 @@ export function InvestigationProvider({ children }: { children: React.ReactNode 
     ];
     const edges = h.supporting_evidence_ids.map((id) => ({ from: id, to: h.hypothesis_id }));
     return { nodes, edges };
-  }, [investigation, selectedHypothesisId]);
+  }, [investigation, selectedHypothesisId, usingFallback]);
 
   const reset = useCallback(() => {
     setEngagement(null);
@@ -275,6 +294,7 @@ export function InvestigationProvider({ children }: { children: React.ReactNode 
 
   const value: InvestigationContextValue = {
     usingFallback,
+    agentStatus,
     engagement,
     investigation,
     uploading,

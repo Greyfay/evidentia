@@ -10,11 +10,34 @@ import InvestigationTimeline from "@/components/investigation/InvestigationTimel
 import InvestigationGraphView from "@/components/investigation/InvestigationGraphView";
 import InvestigationEvidenceDrawer from "@/components/investigation/InvestigationEvidenceDrawer";
 
+function AgentModeBadge() {
+  const { agentStatus, usingFallback } = useInvestigation();
+  if (usingFallback || !agentStatus) return null;
+  const live = agentStatus.mode === "live";
+  const parts = [
+    agentStatus.openai.active ? "OpenAI" : null,
+    agentStatus.cognee.active ? "Cognee" : null,
+  ].filter(Boolean);
+  const label = parts.length ? parts.join(" + ") : "deterministic";
+  const color = live ? "var(--forest)" : "var(--amber)";
+  return (
+    <div
+      className="mb-6 inline-flex items-center gap-2 rounded-sm border px-3 py-2 text-xs"
+      style={{ borderColor: color, color }}
+      title={`planner: ${agentStatus.planner}${agentStatus.openai.model ? ` · model: ${agentStatus.openai.model}` : ""}`}
+    >
+      <span className="w-1.5 h-1.5 rounded-full" style={{ background: color }} />
+      {live ? "Live" : agentStatus.mode === "partial" ? "Partial" : "Fallback"} · {label} · planner: {agentStatus.planner}
+    </div>
+  );
+}
+
 function InvestigateContent() {
   const { usingFallback, investigation } = useInvestigation();
 
   return (
     <main className="mx-auto w-full max-w-6xl px-5 sm:px-8 py-10 sm:py-14">
+      <AgentModeBadge />
       {usingFallback && (
         <div
           className="mb-6 flex items-center gap-2 rounded-sm border px-3 py-2 text-xs"

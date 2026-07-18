@@ -10,6 +10,29 @@ const STATUS_LABEL: Record<string, string> = {
   stopped: "Stopped",
 };
 
+// structured_result is the raw dict a deterministic tool returns; its shape
+// varies per tool (flat scalars, or nested vendors/groups arrays). Render it as
+// a readable one-liner — never hand React the object itself.
+function formatStructuredResult(result: unknown): string {
+  if (result == null) return "";
+  if (typeof result === "string") return result;
+  if (typeof result !== "object") return String(result);
+  const entries = Object.entries(result as Record<string, unknown>).filter(
+    ([, v]) => v != null && !(Array.isArray(v) && v.length === 0),
+  );
+  const describe = (v: unknown): string => {
+    if (v != null && typeof v === "object") {
+      const o = v as Record<string, unknown>;
+      const label = o.detail ?? o.title ?? o.subject ?? o.assertion;
+      return typeof label === "string" ? label : JSON.stringify(v);
+    }
+    return String(v);
+  };
+  return entries
+    .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.map(describe).join("; ") : describe(v)}`)
+    .join(" · ");
+}
+
 export default function PlanStepper() {
   const { investigation, stepping, runNextStep, runToCompletion } = useInvestigation();
   if (!investigation) return null;
@@ -65,9 +88,11 @@ export default function PlanStepper() {
                   UTC
                 </span>
               </div>
-              <p className="text-[12.5px] leading-snug" style={{ color: "var(--text-1)" }}>
-                {a.structured_result}
-              </p>
+              {formatStructuredResult(a.structured_result) && (
+                <p className="text-[12.5px] leading-snug" style={{ color: "var(--text-1)" }}>
+                  {formatStructuredResult(a.structured_result)}
+                </p>
+              )}
               {a.calculation && (
                 <div className="font-mono text-[10.5px]" style={{ color: "var(--text-2)" }}>
                   {a.calculation.expression} = <span style={{ color: "var(--text-0)" }}>{a.calculation.result}</span>

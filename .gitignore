@@ -4,6 +4,8 @@ data/
 
 # Secrets
 .env
+.env.*
+!.env.example
 
 # Node / Next.js frontend
 web/node_modules/
