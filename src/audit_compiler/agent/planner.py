@@ -75,6 +75,7 @@ _CATEGORY_HINT = {
 _PLAN = {
     HypothesisCategory.VENDOR_INTEGRITY: [
         "check_vendor_creation_and_approval",
+        "find_related_entities",
         "check_user_permissions",
         "reconcile_vendor_invoices_and_payments",
         "find_contract_or_service_evidence",

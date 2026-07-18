@@ -14,11 +14,37 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ConfigDict, ValidationError
 
-from audit_compiler.agent import tools
+from audit_compiler.agent import cognee_tools, tools
 from audit_compiler.agent.context import AgentContext
 from audit_compiler.agent.models import ToolResult
+
+
+class _CogneeArgs(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+
+class FindRelatedEntitiesArgs(_CogneeArgs):
+    entity_id: str
+    hops: int = 2
+
+
+class FindOtherVendorsConnectedToUserArgs(_CogneeArgs):
+    user_id: str
+    hops: int = 3
+
+
+def _cognee_adapter(
+    fn: Callable[[AgentContext, dict], ToolResult],
+) -> Callable[[AgentContext, BaseModel], ToolResult]:
+    """Bridge a Cognee tool's ``(ctx, dict)`` shape onto the allow-list's ``(ctx, model)``
+    contract: validate via the pydantic model, then hand the tool a plain dict."""
+
+    def _run(ctx: AgentContext, args: BaseModel) -> ToolResult:
+        return fn(ctx, args.model_dump())
+
+    return _run
 
 
 @dataclass(frozen=True)
@@ -149,6 +175,21 @@ TOOLS: dict[str, ToolSpec] = {
         input_model=tools.SubmitCaseToAdmissionArgs,
         description="Run the matching control for a subject/category, then pass its finding "
                     "through the admission gate and return the published verdict.",
+    ),
+    "find_related_entities": ToolSpec(
+        name="find_related_entities",
+        func=_cognee_adapter(cognee_tools.find_related_entities),
+        input_model=FindRelatedEntitiesArgs,
+        description="Explore the Cognee-backed investigation memory graph: return the "
+                    "entities, events and evidence related to an entity id, multi-hop. "
+                    "Relationship context only — never a monetary assertion.",
+    ),
+    "find_other_vendors_connected_to_user": ToolSpec(
+        name="find_other_vendors_connected_to_user",
+        func=_cognee_adapter(cognee_tools.find_other_vendors_connected_to_user),
+        input_model=FindOtherVendorsConnectedToUserArgs,
+        description="Explore the Cognee-backed investigation memory graph: return other "
+                    "vendor entities reachable from a user id, multi-hop.",
     ),
 }
 
