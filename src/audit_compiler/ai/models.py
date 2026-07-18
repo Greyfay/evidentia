@@ -84,4 +84,3 @@ class CaseSummary(AIModel):
     innocent_explanations_considered: tuple[CitedText, ...]
     missing_evidence: tuple[CitedText, ...]
     recommended_review_action: CitedText
-

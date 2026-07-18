@@ -13,4 +13,3 @@ class SummaryProvider(Protocol):
     def summarize(self, payload: CasePayload) -> CaseSummary:
         """Return a structured candidate summary without side effects."""
         ...
-
