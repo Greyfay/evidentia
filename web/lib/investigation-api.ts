@@ -1,0 +1,74 @@
+import type { EngagementSummary, Investigation, InvestigationGraph, TimelineEvent } from "./investigation-types";
+
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+async function json<T>(res: Response): Promise<T> {
+  if (!res.ok) throw new Error(`API ${res.status}`);
+  return res.json() as Promise<T>;
+}
+
+export async function uploadEngagement(
+  file: File,
+): Promise<{ engagement_id: string; engagement: EngagementSummary }> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await fetch(`${API_BASE}/engagements/upload`, { method: "POST", body: form });
+  return json(res);
+}
+
+export async function createInvestigation(engagementId: string, objective: string): Promise<Investigation> {
+  const res = await fetch(`${API_BASE}/investigations`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ engagement_id: engagementId, objective }),
+  });
+  return json(res);
+}
+
+export async function getInvestigation(id: string): Promise<Investigation> {
+  const res = await fetch(`${API_BASE}/investigations/${id}`, { cache: "no-store" });
+  return json(res);
+}
+
+export async function runNext(id: string): Promise<Investigation> {
+  const res = await fetch(`${API_BASE}/investigations/${id}/run-next`, { method: "POST" });
+  return json(res);
+}
+
+export async function runToCompletion(id: string): Promise<Investigation> {
+  const res = await fetch(`${API_BASE}/investigations/${id}/run`, { method: "POST" });
+  return json(res);
+}
+
+export async function getTimeline(id: string): Promise<TimelineEvent[]> {
+  const res = await fetch(`${API_BASE}/investigations/${id}/timeline`, { cache: "no-store" });
+  return json(res);
+}
+
+export async function getGraph(id: string): Promise<InvestigationGraph> {
+  const res = await fetch(`${API_BASE}/investigations/${id}/graph`, { cache: "no-store" });
+  return json(res);
+}
+
+export type HypothesisAction = "dismiss" | "submit" | "continue" | "challenge";
+
+export async function actOnHypothesis(
+  investigationId: string,
+  hypothesisId: string,
+  action: HypothesisAction,
+): Promise<Investigation> {
+  const res = await fetch(
+    `${API_BASE}/investigations/${investigationId}/hypotheses/${hypothesisId}/${action}`,
+    { method: "POST" },
+  );
+  return json(res);
+}
+
+export async function sendMessage(investigationId: string, message: string): Promise<Investigation> {
+  const res = await fetch(`${API_BASE}/investigations/${investigationId}/messages`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ message }),
+  });
+  return json(res);
+}

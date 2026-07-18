@@ -18,6 +18,8 @@ dependencies = [
   "uvicorn[standard]>=0.30",
   "openai>=1.40",
   "tavily-python>=0.5",
+  "python-multipart>=0.0.9",
+  "python-dotenv>=1.0",
 ]
 
 [project.optional-dependencies]

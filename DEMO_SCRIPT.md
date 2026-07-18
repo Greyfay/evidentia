@@ -1,26 +1,31 @@
 # Demo Script (~2 minutes)
 
-Goal: prove the thesis on screen — deterministic proof, model-assisted
-understanding, human sign-off — using one confirmed fraud case and its
-honest twin.
+Goal: prove the thesis on screen — an agent that decides where to look,
+deterministic proof for every claim it makes, and a human sign-off — using
+one confirmed fraud case, one honest twin, and the exact evidence behind both.
 
 | Time | On screen | Narration |
 |------|-----------|-----------|
-| 0:00–0:20 | Terminal: run `admissible compile <dossier> --cases-out web/public/cases.json`. Output scrolls: source inventory (GDPdU, CSV, XLSX, DOCX, PDF, each with status/rows/sha256) then a reconciliation summary. Cut to the compiler screen in the console showing the same counts. | "This is Evidentia. We hand it a raw, mixed German/English accounting dossier — GDPdU exports, spreadsheets, policy documents, scanned invoices — and it compiles every source natively. No file goes to a model just to be read. Every row, cell, and page gets hashed and reconciled before anything else happens." |
-| 0:20–0:55 | Open the case board, filtered to `CONFIRMED`. Click the headline vendor-override case. Walk the evidence chain top to bottom; click one cited number — it jumps to the exact source row/cell/page, highlighted. Then show the calculation panel: expression, inputs, and the actual SQL that produced the result. Scroll to counter-tests: each refuter (independent approval, contract, deliverable, prior history) shown as tested and absent. | "Here's the headline case: one user creates a vendor, approves it, posts the invoices, and executes the payment — no independent sign-off anywhere in the chain. Every number here is clickable — this one jumps straight to the source cell it came from. The calculation isn't a model's guess, it's the SQL that ran against our DuckDB ledger, and you can re-run it. And this case didn't just get flagged — we tested it against every counter-explanation a real auditor would ask for: independent approval, a contract, an actual delivery. None of them held. That's why it's confirmed." |
-| 0:55–1:35 | Switch to the honest-twin case: same control (vendor integrity), different vendor. Open its case file — status `DISMISSED`. Point at the counter-test that cleared it (independent approval by a second user + matched real deliveries), with its own evidence citations. | "Same control, different vendor — and this one gets dismissed. It looks similar on the surface: a new vendor, invoices, payments. But here the approval came from a second, independent user, and the deliveries are real and documented. Dismissing this correctly is just as important as catching the first one — a system that can't tell these apart isn't auditable, it's just noisy. That dismissal is not a fallback, it's a real, evidenced verdict." |
-| 1:35–1:55 | Quick cut: case board zoomed out showing the mix of `CONFIRMED` / `HUMAN_REVIEW` / `DISMISSED` across all four controls, then a glimpse of the `.env` with no keys set (or panel showing "OpenAI: not configured") to show the compile still ran end to end. | "This all runs the same way whether the model layer is here or not — the model only interprets language and drafts hypotheses and explanations; it can never invent a number or override this gate. And this exact pipeline, unmodified, is what will run against the dossier none of us have seen yet." |
-| 1:55–2:00 | Title card / tagline. | "Models understand. Code verifies. Auditors decide." |
+| 0:00–0:15 | Browser: drag a `.zip` dossier onto the upload panel. It uploads, extracts, and compiles; a fresh `engagement_id` appears and the investigation workspace opens. | "This is Evidentia — an audit investigation agent. We hand it a dossier we've never shown it before, zipped up. It extracts safely, compiles every source natively — GDPdU, spreadsheets, invoices — and it's ready to investigate." |
+| 0:15–0:35 | The agent's first move renders on screen: 3–5 ranked hypotheses, each with a claim, category, and priority — one calls out a specific vendor as suspicious. | "It doesn't run a checklist. It looks at what actually parsed — vendors, users, postings — and proposes what's worth chasing: a vendor that looks self-approved, a cluster of payments, a capitalised repair, a period cut-off. It ranks them itself." |
+| 0:35–1:10 | Click into the top hypothesis (the suspicious vendor). Timeline fills in live, one tool at a time: `check_vendor_creation_and_approval` → self-approved, flagged; `check_user_permissions` → toxic create+post+pay combo; `reconcile_vendor_invoices_and_payments` → unreconciled gap; `find_contract_or_service_evidence` → nothing found; `find_independent_approval` → nothing found; `compare_peer_vendors` → far above peer median. Pause on one result and click its cited number — it jumps to the exact source row/cell. | "Watch it work: it checks who created and approved this vendor — same person, no independent sign-off. It checks that person's permissions — they can create, post, *and* pay. It reconciles the invoices against the payments. Then it goes looking for reasons this could be innocent — a contract, an independent approval — and finds none. Every one of these numbers is real and clickable; this one jumps straight to the source cell it came from." |
+| 1:10–1:25 | The agent submits: `submit_case_to_admission` fires, the admission-gate verdict lands as `CONFIRMED`, with the calculation panel (expression, inputs, SQL) visible. | "Because the required counter-checks all came back empty, it submits the case — and the admission gate, not the model, is what stamps this `CONFIRMED`. The exposure number is SQL against our DuckDB ledger, not a model's guess." |
+| 1:25–1:50 | Switch to the second hypothesis: a different, newer vendor — the honest twin. Same tool sequence runs, but this time `find_independent_approval` and `find_contract_or_service_evidence` both come back positive, with their own cited evidence. The hypothesis resolves `DISMISSED`. | "Now the honest twin — a new vendor that looks similar on the surface. Same investigation, same tools. But this time it finds a second, independent approver, and a real, documented contract. It dismisses this one — correctly. Telling these two apart, with evidence, is the whole point." |
+| 1:50–2:00 | Cut to the case board / source viewer for a beat, then title card. | "Models understand. Code verifies. Auditors decide." |
 
 ## Setup notes for recording
 
-- Pre-compile the sample dossier once so the terminal segment is fast and
-  deterministic; re-run live only if timing allows.
-- Have the case board pre-filtered/bookmarked to the two cases used (headline
-  `CONFIRMED` vendor case, honest-twin `DISMISSED` case) to avoid dead air
-  navigating.
+- Pre-zip the sample dossier so the upload step is instant and deterministic;
+  re-record live only if timing allows.
+- Have the OpenAI hybrid planner configured for the take so hypothesis
+  generation reads naturally on screen — the deterministic planner is a fine
+  fallback for a dry run, but the hybrid narration ("it decides") is stronger
+  with a live model.
+- Pre-run the investigation once so you know exactly which hypothesis lands
+  on the confirmed vendor and which lands on the honest twin, and bookmark
+  both — don't discover this live.
 - Keep the "click a cited number" moment slow enough to read the source
-  viewer highlight — it's the single most important beat for the false-
-  positive/provenance thesis.
-- If time is short, cut the 1:35–1:55 beat first; keep the two case walk-
-  throughs and the closing tagline intact.
+  viewer highlight — it's the single most important beat for the
+  false-positive/provenance thesis.
+- If time is short, cut nothing from the two hypothesis walk-throughs; trim
+  the opening upload beat to a single cut instead.

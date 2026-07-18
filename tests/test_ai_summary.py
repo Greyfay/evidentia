@@ -12,7 +12,7 @@ from audit_compiler.ai import (
     SummaryStatus,
     summarize_case,
 )
-from audit_compiler.ai.openai import OpenAISummaryProvider, SYSTEM_PROMPT
+from audit_compiler.ai.openai import SYSTEM_PROMPT, OpenAISummaryProvider
 
 
 def payload() -> CasePayload:
